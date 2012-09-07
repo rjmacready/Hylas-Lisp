@@ -4,7 +4,7 @@
 
 (generic method length of sequence
   (inline i64 ((in (sequence Type)))
-    (ret (.length in))))
+    (ret (gep Type in i64 0))))
 
 (generic method nth of sequence
   (inline Type ((in (sequence Type)) (i64 n))

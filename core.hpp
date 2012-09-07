@@ -49,10 +49,10 @@
     + " " + get_res(tmp_version - 1) + ", " + get_res(tmp_version);
   }
   
-  string add(Form* form)		{return generic_math(form,"add");}
+  string add(Form* form)                {return generic_math(form,"add");}
   string fadd(Form* form)		{return generic_math(form,"fadd");}
-  string sub(Form* form)			{return generic_math(form,"sub");}
-  string fsub(Form* form)		{return generic_math(form,"fsub");}
+  string sub(Form* form)                {return generic_math(form,"sub");}
+  string fsub(Form* form)               {return generic_math(form,"fsub");}
   string mul(Form* form)		{return generic_math(form,"mul");}
   string fmul(Form* form)		{return generic_math(form,"fmul");}
   string udiv(Form* form)		{return generic_math(form,"udiv");}
@@ -80,6 +80,11 @@
     out += emitCode(nth(form,3));
     return out + get_unique_res(latest_type()) + " = fcmp " + cmp_code + " "
     + latest_type() + " " + get_res(res_version-1) + ", " + get_res(res_version);
+  }
+  
+  string gep(Form* form)
+  {
+    return "[[GEP PLACEHOLDER]]";
   }
   
   string simple_if(Form* form)
@@ -110,7 +115,9 @@
       out += "br i1 true,";
     }
     else
+    {
       out += "br i1 " + get_current_res() + ",";
+    }
     out += " label " + get_unique_label() + ", label " + get_unique_label() + "\n";
     out += string(get_label(label_version - 1),1) + "\n";
     out += emitCode(nth(form,2));
@@ -178,38 +185,73 @@
     return out;
   }
   
+  string define_inline(Form* form)
+  {
+    defineFunction(form,Function,doinline);
+    string out = fn_code;
+    fn_code = "";
+    return out;
+  }
+  
+  string define_inline_recursive(Form* form)
+  {
+    defineFunction(form,Recursive,doinline);
+    string out = fn_code;
+    fn_code = "";
+    return out;
+  }
+  
+  string define_inline_fast(Form* form)
+  {
+    defineFunction(form,Fast,doinline);
+    string out = fn_code;
+    fn_code = "";
+    return out;
+  }
+  
+  string construct(Form* form)
+  {
+    return "[[CONSTRUCT PLACEHOLDER]]";
+  }
+  
   void init_stdlib()
   {
     Scope new_scope;
     SymbolTable.push_back(new_scope);
-    Core["def"] = &def_local;
-    Core["set"] = &set;
-    Core["return"] = &ret;
-    Core["add"] = &add;
-    Core["fadd"] = &fadd;
-    Core["sub"] = &fsub;
-    Core["fsub"] = &fsub;
-    Core["mul"] = &mul;
-    Core["fmul"] = &fmul;
-    Core["udiv"] = &udiv;
-    Core["sdiv"] = &sdiv;
-    Core["fdiv"] = &fdiv;
-    Core["urem"] = &urem;
-    Core["srem"] = &srem;
-    Core["frem"] = &frem;
-    Core["icmp"] = &icmp;
-    Core["fcmp"] = &fcmp;
-    Core["begin"] = &begin;
-    Core["main"] = &main_fn;
-    Core["LLVM"] = &embed_llvm;
-    Core["if"] = &simple_if;
-    Core["flow"] = &flow;
+    Core["def"]         = &def_local;
+    Core["set"]         = &set;
+    Core["return"]      = &ret;
+    Core["add"]         = &add;
+    Core["fadd"]        = &fadd;
+    Core["sub"]         = &fsub;
+    Core["fsub"]        = &fsub;
+    Core["mul"]         = &mul;
+    Core["fmul"]        = &fmul;
+    Core["udiv"]        = &udiv;
+    Core["sdiv"]        = &sdiv;
+    Core["fdiv"]        = &fdiv;
+    Core["urem"]        = &urem;
+    Core["srem"]        = &srem;
+    Core["frem"]        = &frem;
+    Core["icmp"]        = &icmp;
+    Core["fcmp"]        = &fcmp;
+    Core["gep"]         = &gep;
+    Core["begin"]       = &begin;
+    Core["main"]        = &main_fn;
+    Core["LLVM"]        = &embed_llvm;
+    Core["if"]          = &simple_if;
+    Core["flow"]        = &flow;
     //Function definitions
-    Core["function"] = &define_function;
-    Core["recursive"] = &define_recursive;
-    Core["fast"] = &define_fast;
+    Core["function"]    = &define_function;
+    Core["recursive"]   = &define_recursive;
+    Core["fast"]        = &define_fast;
+    Core["inline"]      = &define_inline;
+    Core["inline-recursive"] = &define_inline_recursive;
+    Core["inline-fast"] = &define_inline_fast;
+    //Type stuff
+    Core["construct"]   = &construct;
     //FFI
-    Core["foreign"] = &foreign;
+    Core["foreign"]     = &foreign;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");

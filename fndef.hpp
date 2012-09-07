@@ -378,12 +378,10 @@
                 return callcode;
           }
         }
-        printf("ERROR: Couldn't find a matching function.");
-        Unwind();
       }
       else
       {
-        printf("ERROR: Couldn't find a matching function.");
+        printf("ERROR: Couldn't find the function:\n%s.",preprint(code).c_str());
         Unwind();
       }        
     }

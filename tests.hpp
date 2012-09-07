@@ -106,7 +106,7 @@
     testMakeGeneric(readString("(generic structure derp (a) (element a))"));
     testMakeGeneric(readString("(generic function durp (a b c) (function a (x y z) ...))"));
     testMakeGeneric(readString("(generic structure sequence (Type) (length i64) (data (pointer Type)))"));
-    testMakeGeneric(readString("(generic method length of sequence (inline i64 ((in (sequence Type))) (ret (.length in))))"));
+    testMakeGeneric(readString("(generic method length of sequence (inline i64 ((in (sequence Type))) (ret (gep Type in i64 0))))"));
   }
   
   void testPrintTypeSignature(Form* in)
