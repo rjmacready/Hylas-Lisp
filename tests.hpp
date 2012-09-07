@@ -124,6 +124,7 @@
     testPrintTypeSignature(readString("Integer"));
     testPrintTypeSignature(readString("point"));
     testPrintTypeSignature(readString("(derp i32)"));
+    testPrintTypeSignature(readString("(derp i32*)"));
     testPrintTypeSignature(readString("(sequence char)"));
     cout << "Code Stack: " << endl;
     for(unsigned long i = 0; i < CodeStack.size(); i++)

@@ -6,7 +6,6 @@
   Form* editForm(Form* in, map<string,Form*> replacements);
   string specializeType(Generic in, map<string,Form*> replacements, string signature);
   string printTypeSignature(Form* form);
-  string specializeFunction(Form* code, map<string,Form*> replacements);
   bool checkTypeExistence(string name);
   string makeType(Form* in);
   string makeStructure(Form* in);
@@ -111,7 +110,7 @@
     //Specialize methods
     for(unsigned long i = 0; i < in.methods.size(); i++)
     {
-      out += "\n" + specializeFunction(in.methods[i],replacements);
+      out += "\n" + emitCode(editForm(in.methods[i],replacements));
     }
     //Return the code for the specialization
     return out;
@@ -164,25 +163,33 @@
           else
           {
             string signature = "%" + type_name + "_";
-            for(unsigned long j = 1; j < length(form); j++)
+            unsigned long j = 1;
+            for(; j < length(form); j++)
             {
               signature += printTypeSignature(nth(form,j)) + "_";
             }
             signature = cutlast(signature);
-            for(unsigned long k = 0; k < Generics[i].second.specializations.size(); k++)
+            for(j = 0; j < Generics[i].second.specializations.size(); j++)
             {
-              if(Generics[i].second.specializations[k] == signature)
+              if(Generics[i].second.specializations[j] == signature)
               {
                 return signature;
               }
             }
             map<string,Form*> replacements;
-            for(unsigned long j = 0; j < Generics[i].second.arguments.size(); j++)
+            for(j = 0; j < Generics[i].second.arguments.size(); j++)
             {
               replacements[Generics[i].second.arguments[j]] = nth(form,j+1);
             }
             push(specializeType(Generics[i].second,replacements,signature));
             Generics[i].second.specializations.push_back(signature);
+            for(j = 0; j < signature.length(); j++)
+            {
+              if(signature[j] == '*')
+              {
+                signature.replace(j,3,"ptr");
+              }
+            }
             return signature;
           }
         }
@@ -190,12 +197,6 @@
       printf("ERROR: Came across an unknown generic type: '%s'.",type_name.c_str());
       Unwind();
     }
-  }
-  
-  string specializeFunction(Form* code, map<string,Form*> replacements)
-  {
-    Form* specialization_code = editForm(code, replacements);
-    return preprint(specialization_code);
   }
   
   bool checkTypeExistence(string name)
