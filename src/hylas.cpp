@@ -93,7 +93,7 @@ namespace Hylas
   void Unwind()
   {
     if(testmode)
-      exit(0);
+      exit(-1);
     else
       longjmp(buf,0);
   }
@@ -113,7 +113,7 @@ namespace Hylas
   #define ScopeDepth SymbolTable.size()-1
   
   #define error_unbound(x)        \
-  printf("ERROR: Symbol '%s' is unbound.",x.c_str()); \
+  printf("ERROR:Symbol '%s' is unbound.",preprint(x).c_str()); \
   Unwind();
   
   string* lookup(string in)
@@ -127,9 +127,9 @@ namespace Hylas
     return NULL;
   }
   
-  unsigned long tmp_version = 0;
-  unsigned long res_version = 0;
-  unsigned long label_version = 0;
+  unsigned long tmp_version = -1;
+  unsigned long res_version = -1;
+  unsigned long label_version = -1;
   
   string cutlast(string in)
   {
@@ -140,13 +140,12 @@ namespace Hylas
    * TEMPORARY REGISTERS
    */
   
-  string get_unique_tmp()
+  inline string get_unique_tmp()
   {
-    tmp_version++;
-    return "%tmp.version" + to_string(tmp_version);
+    return "%tmp.version" + to_string(++tmp_version);
   }
   
-  string get_tmp(long long int v)
+  inline string get_tmp(long long int v)
   {
     return "%tmp.version" + to_string(v);
   }
@@ -159,13 +158,12 @@ namespace Hylas
   
   string get_unique_res(string type)
   {
-    res_version++;
-    string vnum = to_string(res_version);
+    string vnum = to_string(++res_version);
     SymbolTable[ScopeDepth]["%res.version" + vnum] = type;
     return "%res.version" + vnum;
   }
   
-  string get_res(long v)
+  inline string get_res(long v)
   {
     return "%res.version" + to_string(v);
   }
@@ -174,7 +172,7 @@ namespace Hylas
   {
     string* tmp = lookup(name);
     if(tmp == NULL)
-    { error_unbound(name); }
+    { printf("ERROR: Can't find specific res register '%s'.",name.c_str()); Unwind(); }
     return *tmp;
   }
   
@@ -233,6 +231,7 @@ namespace Hylas
   string emitCode(Form* form)
   {
     string out;
+    printf("Emitting code for '%s'!\n",preprint(form).c_str());
     if(isatom(form))
     {
       switch(analyze(val(form)))
@@ -291,7 +290,7 @@ namespace Hylas
           string* tmp = lookup(sym);
           if(tmp == NULL)
           {
-            error_unbound(sym);
+            error_unbound(form);
           }
           else
             out = load(get_unique_res(*tmp),*tmp,"%"+sym+to_string(ScopeDepth));
@@ -323,7 +322,7 @@ namespace Hylas
        *    		out += load(get_unique_res(val(nth(form,0))),val(nth(form,0)),get_current_tmp());
        }*/
     }
-    return out;
+    return "\n"+out+"\n";
   }
   
   string TopLevel(Form* in)

@@ -78,11 +78,18 @@
       Form* out;
       out = editForm(car(in),replacements);
       in = cdr(in);
-      while(in != NULL && islist(in))
+      if(in == NULL)
       {
-        out = append((isatom(out) ? cons(out,NULL) : out),
-                     (isatom(car(in)) ? cons(editForm(car(in),replacements),NULL) : cons(editForm(car(in),replacements),NULL)));
-        in = cdr(in);
+        out = cons(out,NULL);
+      }
+      else
+      {
+        while(in != NULL && islist(in))
+        {
+          out = append((isatom(out) ? cons(out,NULL) : out),
+                      (isatom(car(in)) ? cons(editForm(car(in),replacements),NULL) : cons(editForm(car(in),replacements),NULL)));
+          in = cdr(in);
+        }
       }
       return out;
     }
@@ -107,9 +114,12 @@
       out += printTypeSignature(cadr(nth(cdr(cdr(specialization_code)),i))) + ",";
     }
     out = cutlast(out)+" }\n";
+    printf("Specializing methods!\n");
     //Specialize methods
     for(unsigned long i = 0; i < in.methods.size(); i++)
     {
+      printf("Specializing method %lu!\n",i);
+      printf("Method code:\n%s\n",preprint(editForm(in.methods[i],replacements)).c_str());
       out += "\n" + emitCode(editForm(in.methods[i],replacements));
     }
     //Return the code for the specialization

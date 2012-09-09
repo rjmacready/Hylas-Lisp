@@ -369,19 +369,19 @@
             for(arg_iterator = seeker->second.versions[i].arguments.begin();
                 arg_iterator != seeker->second.versions[i].arguments.end();
             arg_iterator++)
-                {
-                  callcode += arg_iterator->second + " ";
-                  callcode += get_res(res_nums[0]) + ", ";
-                  res_nums.erase(res_nums.begin());
-                }
-                callcode = (arguments.empty() ? callcode : (cutlast(callcode) + ")"));
-                return callcode;
+            {
+              callcode += arg_iterator->second + " ";
+              callcode += get_res(res_nums[0]) + ", ";
+              res_nums.erase(res_nums.begin());
+            }
+            callcode = (arguments.empty() ? callcode : (cutlast(callcode) + ")"));
+            return callcode;
           }
         }
       }
       else
       {
-        printf("ERROR: Couldn't find the function:\n%s.",preprint(code).c_str());
+        printf("ERROR: Couldn't find the function '%s'.",func.c_str());
         Unwind();
       }        
     }

@@ -43,6 +43,7 @@
     testEditForm(readString("(A B)"),replacements);
     cin.get();
     testEditForm(readString("(sample A (derp B) (herp C hurp))"),replacements);
+    testEditForm(readString("(inline i64 ((in (sequence Type))) (ret 1))"),replacements);
     cin.get();
   }
   
@@ -106,7 +107,7 @@
     testMakeGeneric(readString("(generic structure derp (a) (element a))"));
     testMakeGeneric(readString("(generic function durp (a b c) (function a (x y z) ...))"));
     testMakeGeneric(readString("(generic structure sequence (Type) (length i64) (data (pointer Type)))"));
-    testMakeGeneric(readString("(generic method length of sequence (inline i64 ((in (sequence Type))) (ret (gep Type in i64 0))))"));
+    testMakeGeneric(readString("(generic method length of sequence (inline i64 ((in (sequence Type))) 10))"));
   }
   
   void testPrintTypeSignature(Form* in)
@@ -142,7 +143,7 @@
       cout << "Element " << i << ": " << nth(test,i) << endl;
     }*/
     //runTest_append();
-    //runTest_editForm();
+    runTest_editForm();
     runTest_makeType();
     runTest_makeStructure();
     runTest_makeGeneric();
@@ -167,11 +168,11 @@
       "(test)",
       "(test 2 3)",
       "(test2)",
-      "(recursive fib i64 ((n i64))\
+      /*"(recursive fib i64 ((n i64))\
         (flow (icmp ult 2 n)\
           n\
             (add (fib (sub n 1))\
-                 (fib (sub n 2)))))",
+                 (fib (sub n 2)))))",*/
       "\0"
     };
     for(unsigned long i = 0; tests[i] != "\0"; i++)

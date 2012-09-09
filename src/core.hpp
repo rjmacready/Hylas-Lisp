@@ -21,7 +21,7 @@
     string* tmp = lookup(varname);
     if(tmp == NULL)
     {
-      error_unbound(varname);
+      error_unbound(nth(form,1));
     }
     string out = emitCode(nth(form,2));
     out += store(latest_type(),get_current_res(),"%"+varname);
@@ -82,9 +82,9 @@
     + latest_type() + " " + get_res(res_version-1) + ", " + get_res(res_version);
   }
   
-  string gep(Form* form)
+  string access(Form* form)
   {
-    return "[[GEP PLACEHOLDER]]";
+    
   }
   
   string simple_if(Form* form)
@@ -220,7 +220,7 @@
     SymbolTable.push_back(new_scope);
     Core["def"]         = &def_local;
     Core["set"]         = &set;
-    Core["return"]      = &ret;
+    Core["ret"]      = &ret;
     Core["add"]         = &add;
     Core["fadd"]        = &fadd;
     Core["sub"]         = &fsub;
@@ -235,7 +235,7 @@
     Core["frem"]        = &frem;
     Core["icmp"]        = &icmp;
     Core["fcmp"]        = &fcmp;
-    Core["gep"]         = &gep;
+    Core["acess"]       = &access;
     Core["begin"]       = &begin;
     Core["main"]        = &main_fn;
     Core["LLVM"]        = &embed_llvm;

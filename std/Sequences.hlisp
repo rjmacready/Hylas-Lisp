@@ -4,11 +4,11 @@
 
 (generic method length of sequence
   (inline i64 ((in (sequence Type)))
-    (ret (gep Type in i64 0))))
+    (gep Type in i64 0)))
 
 (generic method nth of sequence
   (inline Type ((in (sequence Type)) (i64 n))
-    (ret (gep Type in i64 1 i64 n))))
+    (gep Type in i64 1 i64 n)))
         
 (generic method member of sequence
         (function bool ((in (sequence Type)) (obj Type))
