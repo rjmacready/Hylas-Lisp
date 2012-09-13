@@ -5,7 +5,7 @@
     map<string,string>::iterator seeker = WordMacros.find(word);
     if(seeker != WordMacros.end())
     {
-      if(allow_RedefineMacros)
+      if(master.allow_RedefineMacros)
         WordMacros[word] = replacement;
       else
       {
@@ -260,23 +260,6 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
   ostream& operator<<(ostream& out, Form* in)
   {
     out << preprint(in);
-    return out;
-  }
-  
-  template <typename T>
-  inline string to_string(T datum)
-  {
-    stringstream output;
-    output << datum;
-    return output.str();
-  }
-  
-  template <typename T>
-  inline T from_string(string datum)
-  {
-    stringstream stream(datum);
-    T out;
-    stream >> out;
     return out;
   }
   

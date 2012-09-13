@@ -14,28 +14,29 @@
   void addGeneric(string name, Generic in);
   Generic addGenericMethod(string name, Form* in);
   Generic makeGeneric(Form* in);
-  #define typeSimple    false
-  #define typeStructure true
+  
+  #define typeSimple    0
+  #define typeStructure 1
+  #define typeFunction 2
+  #define typeMethod    3
+  
   
   struct BaseType
   {
-	bool id;
-    vector<Form*> methods;
-  }
+    unsigned char id;
+  };
   
   struct Type : BaseType
   {
     map<string,pair<int,string> > members;
-    vector<Form*> methods;
   };
-  
-  #define typeMethod	false
   
   struct Generic : Type
   {
     vector<string> arguments;
     Form* code;
     map<string,map<string, pair<int,string> > > specializations;
+    vector<Form*> methods;
   };
   
   vector<string> CoreTypes;
@@ -110,23 +111,23 @@
   
   string specializeType(Generic* in, map<string,Form*> replacements, string signature)
   {
-    Form* specialization_code = editForm(in.code, replacements);
+    Form* specialization_code = editForm(in->code, replacements);
     string out = signature + " = type { ";
-	string type;
+    string type;
     for(unsigned long i = 0; i < length(cdr(cdr(specialization_code))); i++)
     {
       type = printTypeSignature(cadr(nth(cdr(cdr(specialization_code)),i)));
-      in.specializations[signature][car(nth(cdr(cdr(specialization_code)),i))] = pair<int,string>(i,type);
+      in->specializations[signature][val(car(nth(cdr(cdr(specialization_code)),i)))] = pair<int,string>(i,type);
       out += type + ",";
     }
     out = cutlast(out)+" }\n";
     printf("Specializing methods!\n");
     //Specialize methods
-    for(unsigned long i = 0; i < in.methods.size(); i++)
+    for(unsigned long i = 0; i < in->methods.size(); i++)
     {
       printf("Specializing method %lu!\n",i);
-      printf("Method code:\n%s\n",preprint(editForm(in.methods[i],replacements)).c_str());
-      out += "\n" + emitCode(editForm(in.methods[i],replacements));
+      printf("Method code:\n%s\n",preprint(editForm(in->methods[i],replacements)).c_str());
+      out += "\n" + emitCode(editForm(in->methods[i],replacements));
     }
     //Return the code for the specialization
     return out;
@@ -196,14 +197,14 @@
             {
               replacements[Generics[i].second.arguments[j]] = nth(form,j+1);
             }
-			for(j = 0; j < signature.length(); j++)
+            for(j = 0; j < signature.length(); j++)
             {
               if(signature[j] == '*')
               {
                 signature.replace(j,3,"ptr");
               }
             }
-            push(specializeType(Generics[i].second,replacements,signature));
+            push(specializeType(&(Generics[i].second),replacements,signature));
             return signature;
           }
         }
@@ -243,7 +244,6 @@
     }
     BasicTypes[name] = tmp;
     string type = printTypeSignature(nth(in,2));
-    tmp.members["DEFAULT"] = type;
     return "%"+ name + " = type " + type;
   }
   
@@ -308,7 +308,7 @@
       }
     }
     string out = "%" + name + " = type {";
-    for(map<string, pair<int,string> >::iterator seeker = fields.begin(); seeker != fields.end(); seeker++)
+    for(map<string,pair<int,string> >::iterator seeker = tmp.members.begin(); seeker != tmp.members.end(); seeker++)
     {
       out += seeker->second.second + ", ";
     }

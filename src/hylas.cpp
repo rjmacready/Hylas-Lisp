@@ -94,29 +94,13 @@ namespace Hylas
   };
   
   Compiler master;
-  #define @	master
   
-  jmp_buf buf;
-  bool testmode = false;
-  
+  #define plain       false
+  #define HTML  true
+ 
+  #include "utils.hpp"
   #include "errors.hpp"
-  
-  void Unwind()
-  {
-    if(testmode)
-      exit(-1);
-    else
-      longjmp(buf,0);
-  }
-  
   #include "reader.hpp"
-  
-  string dump_form(Form* input)
-  {
-    string out = (string)"Form: " + (isatom(input) ? "Atom" : "List") + (string)"\n'";
-    out += preprint(input) + "'\n";
-    return out + "(Line " + to_string(input->line) + ", column " + to_string(input->column) + ")";
-  }
   
   typedef map<string,string> Scope;
   typedef vector<Scope> ST;
@@ -218,9 +202,9 @@ namespace Hylas
   {
     for(map<string,string>::iterator i = SymbolTable[s].begin();
         i != SymbolTable[s].end(); i++)
-        {
-          printf("\n %s : %s",i->first.c_str(),i->second.c_str());
-        }
+    {
+      printf("\n %s : %s",i->first.c_str(),i->second.c_str());
+    }
   }
   
   typedef string (*hFuncPtr)(Form* code);
@@ -239,9 +223,6 @@ namespace Hylas
   #include "core.hpp"
   #include "tests.hpp"
   #include "macros.hpp"
-  
-  #define plain	false
-  #define HTML	true
   
   string emitCode(Form* form)
   {
@@ -367,9 +348,9 @@ namespace Hylas
   {
     //InitializeNativeTarget();
     //Program = new Module("Hylas Lisp",Context);
-	@.allow_RedefineMacros = true;
-	@.allow_RedefineFunctions = false;
-	@..output = plain;
+    master.allow_RedefineMacros = true;
+    master.allow_RedefineFunctions = false;
+    master.output = plain;
     init_stdlib();
     init_types();
     init_optimizer();
@@ -394,7 +375,6 @@ namespace Hylas
 int main()
 {
   using namespace Hylas;
-  master = new Compiler;
   printf("Hylas Lisp 0.1, by Eudoxia\n");
   init();
   cout << "Running tests:\n" << endl;
@@ -404,7 +384,7 @@ int main()
   {
     printf("\n>");
     Form* code = read(stdin);
-    string compiledCode = /*"define void @entry(){\n" +*/ emitCode(code) /*+ "ret void\n}"*/;
+    string compiledCode = /*"define void masterentry(){\n" +*/ emitCode(code) /*+ "ret void\n}"*/;
     printf("Read form:\n%s\n",preprint(code).c_str());
     printf("Compiled form:\n%s",compiledCode.c_str());
     //compileIR(compiledCode);

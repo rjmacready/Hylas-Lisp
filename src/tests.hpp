@@ -82,9 +82,10 @@
       cout << "      " << in.arguments[i] << " ";
     }
     cout << " \n   Generic specializations: " << endl;
-    for(i = 0; i < in.specializations.size(); i++)
+    for(map<string,map<string, pair<int,string> > >::iterator seeker = in.specializations.begin();
+        seeker != in.specializations.end(); seeker++)
     {
-      cout << "      " << in.specializations[i] << " ";
+      cout << "      " << seeker->first << " ";
     }
     cout << "   Generic methods: " << endl;
     for(i = 0; i < in.methods.size(); i++)

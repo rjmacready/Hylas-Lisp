@@ -208,9 +208,9 @@
     string fn_name = val(nth(form,name_pos));
     string fn_ret_type = printTypeSignature(nth(form,ret_type_pos));
     newfn.ret_type = fn_ret_type;
-    map<string,Lambda>::iterator macfind = Macros.find(fn_name);
+    /*map<string,Lambda>::iterator macfind = Macros.find(fn_name);
     if(macfind != Macros.end())
-      { printf("ERROR: A macro has already been defined with that name."); Unwind(); }
+      { printf("ERROR: A macro has already been defined with that name."); Unwind(); }*/
     Scope new_scope;
     SymbolTable.push_back(new_scope);
     //Iterate over arguments
