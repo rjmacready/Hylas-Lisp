@@ -87,9 +87,9 @@
     string out = emitCode(nth(form,1));
     string type = latest_type();
     string type_cdr = string(type,1);
-    string member = nth(form,2);
+    string member = val(nth(form,2));
     string member_type;
-    int member_loc;
+    string member_loc;
     //Find in BasicTypes
     map<string,Type>::iterator seeker = BasicTypes.find(type_cdr);
     if(seeker != BasicTypes.end())
@@ -98,7 +98,7 @@
       if(seeker->second.id == typeStructure)
       {
         //Passed, check if it has that member
-        map<string, pair<int,string> >::iterator checker = seeker->second.members.find(member);
+        map<string,pair<int,string> >::iterator checker = seeker->second.members.find(member);
         if(checker != seeker->second.members.end())
         {
           //Passed, record the member position
@@ -118,17 +118,25 @@
       }
     }
     //Find in Generics
-    for(map<string,Generic>::iterator finder = Generics.begin(); finder != Generics.end(); finder++)
+    for(unsigned long i = 0; i < Generics.size(); i++)
     {
-      //Passed, check if it has that member
-      map<string, pair<int,string> >::iterator checker = seeker->second.members.find(member);
-      if(checker != seeker->second.members.end())
+      if(Generics[i].first == type_cdr)
       {
-	//Passed, record the member position
-	member_loc = to_string<int>(checker->second.first);
-	member_type = checker->second.second;
+        //Passed, check if it has that member
+        map<string,pair<int,string> >::iterator checker = Generics[i].second.members.find(member);
+        if(checker != Generics[i].second.members.end())
+        {
+          //Passed, record the member position
+          member_loc = to_string<int>(checker->second.first);
+          member_type = checker->second.second;
+        }
       }
-    }	
+      if(i == Generics.size()-1)
+      {
+        printf("ERROR: Improper type passed to (access).");
+        Unwind();
+      }
+    }    
     //Emit code
     out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_current_res() + ", i32 0, i32" + member_loc + "\n";
     out += load(get_unique_res(member_type),member_type,get_current_tmp());
@@ -279,7 +287,41 @@
   
   string construct(Form* form)
   {
-    return "[[CONSTRUCT PLACEHOLDER]]";
+    //(construct [structure or generic] a_1 a_2 ... a_n)
+    string out;
+    string type = printTypeSignature(nth(form,1));
+    string type_cdr = string(type,1);
+    long nargs = length(form)-2;
+    //Find in BasicTypes
+    map<string,Type>::iterator seeker = BasicTypes.find(type_cdr);
+    if(seeker != BasicTypes.end())
+    {
+      //Found matching type name, check if it's a structure
+      if(seeker->second.id == typeStructure)
+      {
+        //Passed
+        
+      }
+      else
+      {
+        printf("ERROR: Type '%s' not a structure.",type_cdr.c_str());
+        Unwind();
+      }
+    }
+    //Find in Generics
+    for(unsigned long i = 0; i < Generics.size(); i++)
+    {
+      if(Generics[i].first == type_cdr)
+      {
+        //Passed
+      }
+      if(i == Generics.size()-1)
+      {
+        printf("ERROR: Improper type passed to (access).");
+        Unwind();
+      }
+    }    
+    //Emit code
   }
   
   void init_stdlib()
