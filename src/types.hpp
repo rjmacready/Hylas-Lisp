@@ -28,14 +28,14 @@
   
   struct Type : BaseType
   {
-    map<string,pair<int,string> > members;
+    map<string,pair<long,string> > members;
   };
   
   struct Generic : Type
   {
     vector<string> arguments;
     Form* code;
-    map<string,map<string, pair<int,string> > > specializations;
+    map<string,map<string, pair<long,string> > > specializations;
     vector<Form*> methods;
   };
   
@@ -186,7 +186,7 @@
               signature += printTypeSignature(nth(form,j)) + "_";
             }
             signature = cutlast(signature);
-            for(map<string,map<string, pair<int,string> > >::iterator seeker = Generics[i].second.specializations.begin();
+            for(map<string,map<string, pair<long,string> > >::iterator seeker = Generics[i].second.specializations.begin();
                 seeker != Generics[i].second.specializations.end(); seeker++)
             { 
               if(seeker->first == signature)
@@ -308,7 +308,7 @@
       }
     }
     string out = "%" + name + " = type {";
-    for(map<string,pair<int,string> >::iterator seeker = tmp.members.begin(); seeker != tmp.members.end(); seeker++)
+    for(map<string,pair<long,string> >::iterator seeker = tmp.members.begin(); seeker != tmp.members.end(); seeker++)
     {
       out += seeker->second.second + ", ";
     }

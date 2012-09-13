@@ -98,11 +98,11 @@
       if(seeker->second.id == typeStructure)
       {
         //Passed, check if it has that member
-        map<string,pair<int,string> >::iterator checker = seeker->second.members.find(member);
+        map<string,pair<long,string> >::iterator checker = seeker->second.members.find(member);
         if(checker != seeker->second.members.end())
         {
           //Passed, record the member position
-          member_loc = to_string<int>(checker->second.first);
+          member_loc = to_string<long>(checker->second.first);
           member_type = checker->second.second;  
         }
         else
@@ -120,14 +120,14 @@
     //Find in Generics
     for(unsigned long i = 0; i < Generics.size(); i++)
     {
-      if(Generics[i].first == type_cdr)
+      map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
+      if(finder != Generics[i].second.specializations.end())
       {
-        //Passed, check if it has that member
-        map<string,pair<int,string> >::iterator checker = Generics[i].second.members.find(member);
+        map<string,pair<long,string> >::iterator checker = finder->second.find(member);
         if(checker != Generics[i].second.members.end())
         {
           //Passed, record the member position
-          member_loc = to_string<int>(checker->second.first);
+          member_loc = to_string<long>(checker->second.first);
           member_type = checker->second.second;
         }
       }
@@ -136,7 +136,7 @@
         printf("ERROR: Improper type passed to (access).");
         Unwind();
       }
-    }    
+    }
     //Emit code
     out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_current_res() + ", i32 0, i32" + member_loc + "\n";
     out += load(get_unique_res(member_type),member_type,get_current_tmp());
@@ -271,14 +271,14 @@
     string name = val(nth(form,1));
     string ret_type = val(nth(form,2));
     string c_conv = val(nth(form,3));
-    map<int,string> inputs;
+    map<long,string> inputs;
     for(unsigned long i = 0; i < length(form); i++)
     {
       out += emitCode(nth(form,i));
       inputs[res_version] = latest_type();
     }
     out += (string)"call " + ret_type + " " + c_conv + (string)" @" + name + (string)"(";
-    for(map<int,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
+    for(map<long,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
     {
       out += seeker->second + " " + get_res(seeker->first) + ",";
     }
@@ -292,6 +292,13 @@
     string type = printTypeSignature(nth(form,1));
     string type_cdr = string(type,1);
     long nargs = length(form)-2;
+    map<long,string> inputs;
+    unsigned long i;
+    for(i = 2; i < length(form); i++)
+    {
+      out += emitCode(nth(form,i));
+      inputs[res_version] = latest_type();
+    }
     //Find in BasicTypes
     map<string,Type>::iterator seeker = BasicTypes.find(type_cdr);
     if(seeker != BasicTypes.end())
@@ -300,7 +307,15 @@
       if(seeker->second.id == typeStructure)
       {
         //Passed
-        
+        if(nargs == seeker->second.members.size())
+        {
+          
+        }
+        else
+        {
+          printf("ERROR: Wrong number of args.");
+          Unwind();
+        }
       }
       else
       {
@@ -311,16 +326,26 @@
     //Find in Generics
     for(unsigned long i = 0; i < Generics.size(); i++)
     {
-      if(Generics[i].first == type_cdr)
+      map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
+      if(finder != Generics[i].second.specializations.end())
       {
         //Passed
+        if(nargs == finder->second.size())
+        {
+          
+        }
+        else
+        {
+          printf("ERROR: Wrong number of args.");
+          Unwind();
+        }
       }
       if(i == Generics.size()-1)
       {
-        printf("ERROR: Improper type passed to (access).");
+        printf("ERROR: Improper type passed to (construct).");
         Unwind();
       }
-    }    
+    }
     //Emit code
   }
   

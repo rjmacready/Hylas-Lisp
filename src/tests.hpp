@@ -82,7 +82,7 @@
       cout << "      " << in.arguments[i] << " ";
     }
     cout << " \n   Generic specializations: " << endl;
-    for(map<string,map<string, pair<int,string> > >::iterator seeker = in.specializations.begin();
+    for(map<string,map<string, pair<long,string> > >::iterator seeker = in.specializations.begin();
         seeker != in.specializations.end(); seeker++)
     {
       cout << "      " << seeker->first << " ";
