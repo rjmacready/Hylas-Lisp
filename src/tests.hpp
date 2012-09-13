@@ -143,11 +143,11 @@
       cout << "Element " << i << ": " << nth(test,i) << endl;
     }*/
     //runTest_append();
-    runTest_editForm();
-    runTest_makeType();
-    runTest_makeStructure();
-    runTest_makeGeneric();
-    runTest_printTypeSignature();
+    //runTest_editForm();
+    //runTest_makeType();
+    //runTest_makeStructure();
+    //runTest_makeGeneric();
+    //runTest_printTypeSignature();
     string out;
     string tests[] =
     {
@@ -157,14 +157,14 @@
       "(icmp eq 1 2)",
       "(icmp leq 10 100)",
       //Testing function definition
-      "(function test double ()\
+      "(function test i64 ()\
         10)",
       "(function derp i64 ((n i64))\
         10)",
       "(function test bool ((n i64) (m i64))\
         (icmp eq n m))",
       "(function test2 bool ()\
-        (icmp eq 2 2))",      //Testing Functioncalling
+        (icmp eq 2 2))",      //Testing Function calling
       "(test)",
       "(test 2 3)",
       "(test2)",

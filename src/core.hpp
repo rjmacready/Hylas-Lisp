@@ -84,7 +84,54 @@
   
   string access(Form* form)
   {
-    
+	string out = emitCode(nth(form,1));
+	string type = latest_type();
+	string type_cdr = string(type,1);
+	string member = nth(form,2);
+	string member_type;
+	int member_loc;
+    //Find in BasicTypes
+	map<string,Type>::iterator seeker = BasicTypes.find(type_cdr);
+	if(seeker != BasicTypes.end())
+	{
+	  //Found matching type name, check if it's a structure
+	  if(seeker->second.id == typeStructure)
+	  {
+	    //Passed, check if it has that member
+		map<string, pair<int,string> >::iterator checker = seeker->second.members.find(member);
+		if(checker != seeker->second.members.end())
+		{
+		   //Passed, record the member position
+		   member_loc = to_string<int>(checker->second.first);
+		   member_type = checker->second.second;
+		}
+		else
+		{
+		  printf("ERROR: Type '%s' does not have the member '%s'",type_cdr.c_str(),member.c_str());
+		  Unwind();
+	  }
+	  else
+	  {
+	    printf("ERROR: Type '%s' not a structure.",type_cdr.c_str());
+		Unwind();
+	  }
+	}
+    //Find in Generics
+	for(map<string,Generic>::iterator finder = Generics.begin(); finder != Generics.end(); finder++)
+	{
+	  //Passed, check if it has that member
+	  map<string, pair<int,string> >::iterator checker = seeker->second.members.find(member);
+	  if(checker != seeker->second.members.end())
+	  {
+		//Passed, record the member position
+		member_loc = to_string<int>(checker->second.first);
+		member_type = checker->second.second;
+	  }
+	}	
+     //Emit code
+	 out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_latest_res() + ", i32 0, i32" + member_loc + "\n";
+	 out += load(get_unique_res(member_type),member_type,get_latest_tmp());
+	 return out;
   }
   
   string simple_if(Form* form)
@@ -146,14 +193,14 @@
     return out + "\n}";
   }
   
-  string foreign(Form* form)
+  string declare(Form* form)
   {
-    string out = "declare " + val(nth(form,1)) + " @" + val(nth(form,2)) + "(";
+    string out = "declare " + val(nth(form,2)) + " @" + val(nth(form,1)) + "(";
     for(unsigned int i = 3; i <= length(form)-1; i++)
     {
       out += val(nth(form,i)) + ", ";
     }
-    return string(out,0,out.length()-2) + ")";
+    return cutlast(out) + ")\n";		
   }
   
   string embed_llvm(Form* form)
@@ -207,6 +254,25 @@
     string out = fn_code;
     fn_code = "";
     return out;
+  }
+  
+  string direct_call(Form* form)
+  {
+	string name = val(nth(form,1));
+	string ret_type = val(nth(form,2));
+	string c_conv = val(nth(form,3));
+	map<int,string> inputs;
+	for(unsigned long i = 0; i < length(form); i++)
+	{
+	  out += emitCode(nth(form,i));
+	  inputs[res_version] = latest_type();
+	}
+	string out = "call " + type + " " + c_conv + " @" + name + "(";
+	for(map<int,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
+	{
+	  out += seeker->second + " " + get_res(seeker->first) + ",";
+	}
+	return cutlast(out) + ")";
   }
   
   string construct(Form* form)

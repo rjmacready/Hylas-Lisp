@@ -4,7 +4,7 @@
   bool isCoreType(string in);
   bool isArgument(Form* in, map<string,Form*> arguments);
   Form* editForm(Form* in, map<string,Form*> replacements);
-  string specializeType(Generic in, map<string,Form*> replacements, string signature);
+  string specializeType(Generic* in, map<string,Form*> replacements, string signature);
   string printTypeSignature(Form* form);
   bool checkTypeExistence(string name);
   string makeType(Form* in);
@@ -14,25 +14,28 @@
   void addGeneric(string name, Generic in);
   Generic addGenericMethod(string name, Form* in);
   Generic makeGeneric(Form* in);
-  #define typeSimple    true
-  #define typeStructure false
+  #define typeSimple    false
+  #define typeStructure true
   
-  struct Type
+  struct BaseType
   {
-    bool id;
-    string contents;
+	bool id;
+    vector<Form*> methods;
+  }
+  
+  struct Type : BaseType
+  {
+    map<string,pair<int,string> > members;
     vector<Form*> methods;
   };
   
-  #define typeFunction    true
+  #define typeMethod	false
   
-  struct Generic
+  struct Generic : Type
   {
     vector<string> arguments;
-    bool id;
     Form* code;
-    vector<string> specializations;
-    vector<Form*> methods;
+    map<string,map<string, pair<int,string> > > specializations;
   };
   
   vector<string> CoreTypes;
@@ -105,13 +108,16 @@
     }
   }
   
-  string specializeType(Generic in, map<string,Form*> replacements, string signature)
+  string specializeType(Generic* in, map<string,Form*> replacements, string signature)
   {
     Form* specialization_code = editForm(in.code, replacements);
     string out = signature + " = type { ";
+	string type;
     for(unsigned long i = 0; i < length(cdr(cdr(specialization_code))); i++)
     {
-      out += printTypeSignature(cadr(nth(cdr(cdr(specialization_code)),i))) + ",";
+      type = printTypeSignature(cadr(nth(cdr(cdr(specialization_code)),i)));
+      in.specializations[signature][car(nth(cdr(cdr(specialization_code)),i))] = pair<int,string>(i,type);
+      out += type + ",";
     }
     out = cutlast(out)+" }\n";
     printf("Specializing methods!\n");
@@ -179,27 +185,25 @@
               signature += printTypeSignature(nth(form,j)) + "_";
             }
             signature = cutlast(signature);
-            for(j = 0; j < Generics[i].second.specializations.size(); j++)
-            {
-              if(Generics[i].second.specializations[j] == signature)
-              {
+            for(map<string,map<string, pair<int,string> > >::iterator seeker = Generics[i].second.specializations.begin();
+                seeker != Generics[i].second.specializations.end(); seeker++)
+            { 
+              if(seeker->first == signature)
                 return signature;
-              }
             }
             map<string,Form*> replacements;
             for(j = 0; j < Generics[i].second.arguments.size(); j++)
             {
               replacements[Generics[i].second.arguments[j]] = nth(form,j+1);
             }
-            push(specializeType(Generics[i].second,replacements,signature));
-            Generics[i].second.specializations.push_back(signature);
-            for(j = 0; j < signature.length(); j++)
+			for(j = 0; j < signature.length(); j++)
             {
               if(signature[j] == '*')
               {
                 signature.replace(j,3,"ptr");
               }
             }
+            push(specializeType(Generics[i].second,replacements,signature));
             return signature;
           }
         }
@@ -237,15 +241,14 @@
       printf("ERROR: Type already exists.");
       Unwind();
     }
-    tmp.contents = "%"+ name + " = type " + printTypeSignature(nth(in,2));
     BasicTypes[name] = tmp;
-    return tmp.contents;
+    string type = printTypeSignature(nth(in,2));
+    tmp.members["DEFAULT"] = type;
+    return "%"+ name + " = type " + type;
   }
   
-  string makeStructure(Form* in)
+  void validateStructure(Form* in)
   {
-    Type tmp;
-    tmp.id = typeStructure;
     if(length(in) < 3)
     {
       printf("ERROR: Wrong number of arguments to (structure).");
@@ -259,7 +262,13 @@
         Unwind();
       }
     }
-    map<string,string> fields;
+  }
+  
+  string makeStructure(Form* in)
+  {
+    Type tmp;
+    tmp.id = typeStructure;
+    validateStructure(in);
     string name = val(nth(in,1));
     if(checkTypeExistence(name))
     {
@@ -289,7 +298,7 @@
             printf("ERROR: Can't use a non-symbolic atom as a field name.");
             Unwind();
           }
-          fields[field_name] = printTypeSignature(cadr(current_field));
+          tmp.members[field_name] = pair<int,string>(i-2,printTypeSignature(cadr(current_field)));
         }
       }
       else
@@ -298,15 +307,15 @@
         Unwind();
       }
     }
-    tmp.contents += "%" + name + " = type {";
-    for(map<string,string>::iterator seeker = fields.begin(); seeker != fields.end(); seeker++)
+    string out = "%" + name + " = type {";
+    for(map<string, pair<int,string> >::iterator seeker = fields.begin(); seeker != fields.end(); seeker++)
     {
-      tmp.contents += seeker->second + ", ";
+      out += seeker->second.second + ", ";
     }
-    tmp.contents = cutlast(cutlast(tmp.contents));
-    tmp.contents += "}";
+    out = cutlast(cutlast(out));
+    out += "}";
     BasicTypes[name] = tmp;
-    return tmp.contents;
+    return out;
   }
   
   bool checkGenericExistence(string name, bool id)
@@ -336,10 +345,42 @@
        * And we end up with:
        * (structure derp (element a))
        */
+	  validateStructure(in);
       string name = val(nth(in,2));
       Form* code = readString("(structure " + name + ")");
       code = append(code, cdr(cdr(cdr(cdr(in)))));
       out.code = code;
+      for(unsigned long i = 2; i < length(in); i++)
+      {
+        Form* current_field = nth(in,i);
+        if(islist(current_field))
+        {
+          if(length(current_field) != 2)
+          {
+            printf("ERROR: Structure fields must either be a (name type) pair or a single symbol in case of generic structures");
+            Unwind();
+          }
+          else if(islist(car(current_field)))
+          {
+            printf("ERROR: Can't use a list as a field name.");
+            Unwind();
+          }
+          else
+          {
+            string field_name = val(car(current_field));
+            if(analyze(field_name) != Symbol)
+            {
+              printf("ERROR: Can't use a non-symbolic atom as a field name.");
+              Unwind();
+            }
+          }
+        }
+        else
+        {
+          printf("ERROR: Structure fields must be lists, not atoms.");
+          Unwind();
+        }
+	  }
     }
     else if(type == typeFunction)
     {
@@ -405,16 +446,6 @@
       {
         if(Generics[i].second.id == typeStructure);
         {
-          /*Found the proper one
-           * Now we modify the code to make it all ready for specialization
-           * We start off with:
-           * (generic method nth of sequence
-           *    (inline Type ((in (sequence Type)) (i64 n))
-           *            (ret (gep Type in i64 1 i64 n))))
-           * And we end up with:
-           * (inline nth Type ((in (sequence Type)) (i64 n))
-           *    (ret (gep Type in i64 1 i64 n)))
-           */
           Form* code = readString("(" + val(car(nth(in,5))) + " " + val(nth(in,2)) + ")");
           code = append(code,cdr(nth(in,5)));
           Generics[i].second.methods.push_back(code);

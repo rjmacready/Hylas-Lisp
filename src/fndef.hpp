@@ -19,7 +19,6 @@
   };
   
   map<string,MetaFunction> FunctionTable;
-  map<string,Lambda> Macros;
   
   /*
    * - Iterate over the arguments, noting type-annotated and polymorphic arguments
@@ -241,7 +240,7 @@
             }
             else
             {
-              string type = preprint(nth(current_arg,1));
+              string type = printTypeSignature(nth(current_arg,1));
               fn_args[argname] = type;
               SymbolTable[ScopeDepth][argname] = type;
             }
@@ -276,10 +275,10 @@
       string arg_code;
       for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
       {
-        arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ", ";
+        arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ",";
       }
-      tmp_code = "define " + fn_type + (string)" @" + fn_name + to_string(seeker->second.versions.size()-1)
-      + "(" + cutlast(arg_code) + "){\n";
+      tmp_code = "define " + fn_ret_type + (string)" @" + fn_name + to_string(seeker->second.versions.size()-1)
+      + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code)) + "){\n";
     }
     else
     {
@@ -292,7 +291,7 @@
       {
         arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ", ";
       }
-      tmp_code = "define " + fn_type + (string)" @" + fn_name + "0" + "(" + cutlast(arg_code)
+      tmp_code = "define " + fn_ret_type + (string)" @" + fn_name + "0" + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code))
       + "){\n";
     }
     //Compile the code
@@ -300,7 +299,7 @@
     {
       tmp_code += emitCode(nth(form,i));
     }
-    fn_code = tmp_code + "ret " + latest_type() + " " + get_current_res() + "\n}";;
+    fn_code = tmp_code + "ret " + fn_ret_type + " " + get_current_res() + "\n}";;
     return fn_code;
   }
   

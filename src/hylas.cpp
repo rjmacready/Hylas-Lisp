@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <stdarg.h>
 
 /*#include "llvm/DerivedTypes.h"
  * #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -85,10 +86,20 @@ namespace Hylas
   string code(string input);
   string emitCode(Form* form);
   
-  bool allow_RedefineMacros = true;
+  struct Compiler
+  {
+	bool allow_RedefineMacros;
+	bool allow_RedefineFunctions;
+	bool output;
+  };
+  
+  Compiler master;
+  #define @	master
   
   jmp_buf buf;
   bool testmode = false;
+  
+  #include "errors.hpp"
   
   void Unwind()
   {
@@ -195,11 +206,11 @@ namespace Hylas
   inline string get_current_label(){ return get_label(label_version);}
   
   #define allocate(address,type)		\
-  (string)"\n" + (string)address + " = alloca " + (string)type
+  (string)address + " = alloca " + (string)type + "\n"
   #define store(type,value,address)		\
-  "\nstore " + (string)type + " " + (string)value + ", " + (string)type + "* " + (string)address
+  "store " + (string)type + " " + (string)value + ", " + (string)type + "* " + (string)address + "\n"
   #define load(to,type,source)			\
-  (string)"\n" + to + " = load " + (string)type + "* " + (string)source
+  to + " = load " + (string)type + "* " + (string)source
   
   #define latest_type()   res_type(get_current_res())
   
@@ -222,11 +233,15 @@ namespace Hylas
   {
     CodeStack.push_back(in);
   }
-  
+
   #include "types.hpp"
   #include "fndef.hpp"
   #include "core.hpp"
   #include "tests.hpp"
+  #include "macros.hpp"
+  
+  #define plain	false
+  #define HTML	true
   
   string emitCode(Form* form)
   {
@@ -322,7 +337,7 @@ namespace Hylas
        *    		out += load(get_unique_res(val(nth(form,0))),val(nth(form,0)),get_current_tmp());
        }*/
     }
-    return "\n"+out+"\n";
+    return out+"\n";
   }
   
   string TopLevel(Form* in)
@@ -352,6 +367,9 @@ namespace Hylas
   {
     //InitializeNativeTarget();
     //Program = new Module("Hylas Lisp",Context);
+	@.allow_RedefineMacros = true;
+	@.allow_RedefineFunctions = false;
+	@..output = plain;
     init_stdlib();
     init_types();
     init_optimizer();
@@ -376,6 +394,7 @@ namespace Hylas
 int main()
 {
   using namespace Hylas;
+  master = new Compiler;
   printf("Hylas Lisp 0.1, by Eudoxia\n");
   init();
   cout << "Running tests:\n" << endl;
