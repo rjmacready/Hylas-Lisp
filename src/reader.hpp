@@ -263,13 +263,13 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
     return out;
   }
   
-  #define BooleanTrue	0
-  #define BooleanFalse	1
-  #define Integer		2
-  #define Real		3
-  #define Symbol		4
-  #define String		5
-  #define Unidentifiable  6
+  #define BooleanTrue	        0
+  #define BooleanFalse	        1
+  #define Integer	        2
+  #define Real		        3
+  #define Symbol	        4
+  #define String	        5
+  #define Unidentifiable        6
   
   unsigned char analyze(string input)
   {

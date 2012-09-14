@@ -394,6 +394,37 @@
     return out;
   }
   
+  string make_array(Form* form)
+  {
+    string out;
+    string type;
+    vector<long> inputs;
+    unsigned long i = 1;
+    for(; i < length(form); i++)
+    {
+      out += emitCode(nth(form,i));
+      if(!type.empty())
+      {
+        if(latest_type() != type)
+        {
+          printf("ERROR: When trying to construct an array, not all the types matched.");
+        }
+      }
+      inputs.push_back(res_version);
+      type = latest_type();
+    }
+    string array_type;
+    array_type = "[" + to_string<long>(length(form)-1) + " x " + type + "]";
+    out += allocate("@array" + to_string<unsigned long>(array_version++),array_type);
+    string tmp;
+    for(i = inputs.size()-1; i >= 0; i--)
+    {
+      tmp += type + " " + get_res(inputs[i]) + ",";
+    }
+    out += store(array_type,"["+cutlast(type)+"]",get_unique_res(array_type));
+    return out;
+  }
+  
   void init_stdlib()
   {
     Scope new_scope;
@@ -421,6 +452,7 @@
     Core["LLVM"]        = &embed_llvm;
     Core["if"]          = &simple_if;
     Core["flow"]        = &flow;
+    Core["make-array"]  = &make_array;
     //Function definitions
     Core["function"]    = &define_function;
     Core["recursive"]   = &define_recursive;

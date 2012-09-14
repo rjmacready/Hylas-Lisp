@@ -125,6 +125,8 @@ namespace Hylas
   unsigned long tmp_version = -1;
   unsigned long res_version = -1;
   unsigned long label_version = -1;
+  unsigned long string_version = -1;
+  unsigned long array_version = -1;
   
   string cutlast(string in)
   {
@@ -290,6 +292,15 @@ namespace Hylas
           }
           else
             out = load(get_unique_res(*tmp),*tmp,"%"+sym+to_string(ScopeDepth));
+          break;
+        }
+        case String:
+        {
+          string str = cutlast(string(val(form),1));
+          long length = str.length()-1;
+          string type = "[" + to_string<long>(length) + " x i8]";
+          push("@str" + to_string<unsigned long>(string_version++) + " = private global " + type + " c\"" + str + "\\0A\\00\"");
+          out = get_unique_res(type) + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
           break;
         }
       }
