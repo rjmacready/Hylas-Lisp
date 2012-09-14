@@ -415,13 +415,15 @@
     }
     string array_type;
     array_type = "[" + to_string<long>(length(form)-1) + " x " + type + "]";
-    out += allocate("@array" + to_string<unsigned long>(array_version++),array_type);
+    string address = "@array" + to_string<unsigned long>(array_version++);
+    push(address + " = global " + array_type + " zeroinitializer");
     string tmp;
     for(i = inputs.size()-1; i >= 0; i--)
     {
       tmp += type + " " + get_res(inputs[i]) + ",";
     }
-    out += store(array_type,"["+cutlast(type)+"]",get_unique_res(array_type));
+    out += store(array_type,"["+cutlast(type)+"]",address);
+    out += load(get_unique_res(array_type),array_type,address);
     return out;
   }
   

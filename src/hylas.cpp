@@ -299,7 +299,7 @@ namespace Hylas
           string str = cutlast(string(val(form),1));
           long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";
-          push("@str" + to_string<unsigned long>(string_version++) + " = private global " + type + " c\"" + str + "\\0A\\00\"");
+          push("@str" + to_string<unsigned long>(string_version++) + " = global " + type + " c\"" + str + "\\0A\\00\"");
           out = get_unique_res(type) + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
           break;
         }
