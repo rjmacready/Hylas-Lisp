@@ -242,7 +242,7 @@
             {
               string type = printTypeSignature(nth(current_arg,1));
               fn_args[argname] = type;
-              SymbolTable[ScopeDepth][argname] = type;
+              SymbolTable[ScopeDepth][argname].sym = type;
             }
           }
         }

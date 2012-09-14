@@ -95,14 +95,21 @@ namespace Hylas
   
   Compiler master;
   
-  #define plain       false
-  #define HTML  true
+  #define plain         false
+  #define HTML          true
  
   #include "utils.hpp"
   #include "errors.hpp"
   #include "reader.hpp"
   
-  typedef map<string,string> Scope;
+  struct Variable
+  {
+    string sym;
+    bool constant;
+    bool argument;
+  };
+  
+  typedef map<string,Variable> Scope;
   typedef vector<Scope> ST;
   ST SymbolTable;
   #define ScopeDepth SymbolTable.size()-1
@@ -115,9 +122,9 @@ namespace Hylas
   {
     for(long i = ScopeDepth; i != -1; i--)
     {
-      map<string,string>::iterator seeker = SymbolTable[i].find(in);
+      map<string,Variable>::iterator seeker = SymbolTable[i].find(in);
       if(seeker != SymbolTable[i].end())
-        return &seeker->second;
+        return &seeker->second.sym;
     }
     return NULL;
   }
@@ -156,7 +163,7 @@ namespace Hylas
   string get_unique_res(string type)
   {
     string vnum = to_string(++res_version);
-    SymbolTable[ScopeDepth]["%res.version" + vnum] = type;
+    SymbolTable[ScopeDepth]["%res.version" + vnum].sym = type;
     return "%res.version" + vnum;
   }
   
@@ -202,16 +209,12 @@ namespace Hylas
   
   void dump_scope(unsigned long s)
   {
-    for(map<string,string>::iterator i = SymbolTable[s].begin();
+    for(map<string,Variable>::iterator i = SymbolTable[s].begin();
         i != SymbolTable[s].end(); i++)
     {
-      printf("\n %s : %s",i->first.c_str(),i->second.c_str());
+      printf("\n %s : %s",i->first.c_str(),i->second.sym.c_str());
     }
   }
-  
-  typedef string (*hFuncPtr)(Form* code);
-  
-  map<string,hFuncPtr> Core;
   
   vector<string> CodeStack;
   
@@ -229,8 +232,12 @@ namespace Hylas
   string emitCode(Form* form)
   {
     string out;
-    printf("Emitting code for '%s'!\n",preprint(form).c_str());
-    if(isatom(form))
+    if(form == NULL)
+    {
+      printf("Can't emit code for the null form.");
+      Unwind();
+    }
+    else if(isatom(form))
     {
       switch(analyze(val(form)))
       {
@@ -322,24 +329,57 @@ namespace Hylas
       {
         out = callFunction(func,cdr(form));
       }
-      /*if(true)
-       *      {
-       *    		out = allocate(get_unique_tmp(),val(nth(form,0)));
-       *    		out += store(val(nth(form,0)),val(nth(form,1)),get_current_tmp());
-       *    		out += load(get_unique_res(val(nth(form,0))),val(nth(form,0)),get_current_tmp());
-       }*/
     }
     return out+"\n";
   }
   
-  string TopLevel(Form* in)
+  string Compile(Form* form)
   {
-    //...
     string out;
+    string tmp;
+    bool need_entry;
+    if(form == NULL)
+    {
+      printf("Can't emit code for the null form.");
+      Unwind();
+    }
+    else if(isatom(form))
+    {
+      out = emitCode(form);
+      need_entry = true;
+    }
+    else
+    {
+      if(islist(car(form)))
+      {
+        printf("ERROR: Lists can't be used as a function call until I implement lambda.");
+        Unwind();
+      }
+      string func = val(car(form));
+      map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
+      if(seeker != TopLevel.end())
+      {
+        out = seeker->second(form);
+      }
+      else
+      {
+        seeker = Core.find(func);
+        if(seeker != Core.end())
+        {
+          out = callFunction(func,cdr(form));
+          need_entry = true;
+        }
+      }
+    }
     for(unsigned long i = 0; i < CodeStack.size(); i++)
     {
-      out += CodeStack[i] + "\n";
+      tmp += CodeStack[i] + "\n";
     }
+    if(need_entry)
+    {
+      out = "define " + latest_type() + " @entry(){\n" + out + "}";
+    }
+    out = tmp + out;
     CodeStack.clear();
     return out;
   }

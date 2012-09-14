@@ -1,3 +1,8 @@
+  typedef string (*hFuncPtr)(Form* code);
+  
+  map<string,hFuncPtr> TopLevel;
+  map<string,hFuncPtr> Core;
+  
   string def_local(Form* form)
   {
     string varname = val(nth(form,1));
@@ -11,8 +16,13 @@
     out += allocate("%"+varname,latest_type());
     out += store(latest_type(),get_current_res(),"%"+varname);
     string str = latest_type();
-    SymbolTable[ScopeDepth][varname] = str;
+    SymbolTable[ScopeDepth][varname].sym = str;
     return out;
+  }
+  
+  string def_global(Form* form)
+  {
+    
   }
   
   string set(Form* form)
@@ -431,9 +441,21 @@
   {
     Scope new_scope;
     SymbolTable.push_back(new_scope);
+    //Init Toplevel
+    TopLevel["def"]         = &def_global;
+    TopLevel["main"]        = &main_fn;
+    TopLevel["LLVM"]        = &embed_llvm;
+    TopLevel["function"]    = &define_function;
+    TopLevel["recursive"]   = &define_recursive;
+    TopLevel["fast"]        = &define_fast;
+    TopLevel["inline"]      = &define_inline;
+    TopLevel["inline-recursive"] = &define_inline_recursive;
+    TopLevel["inline-fast"] = &define_inline_fast;
+    TopLevel["declare"]     = &declare;
+    //Init Core
     Core["def"]         = &def_local;
     Core["set"]         = &set;
-    Core["ret"]      = &ret;
+    Core["ret"]         = &ret;
     Core["add"]         = &add;
     Core["fadd"]        = &fadd;
     Core["sub"]         = &fsub;
@@ -450,23 +472,11 @@
     Core["fcmp"]        = &fcmp;
     Core["acess"]       = &access;
     Core["begin"]       = &begin;
-    Core["main"]        = &main_fn;
-    Core["LLVM"]        = &embed_llvm;
     Core["if"]          = &simple_if;
     Core["flow"]        = &flow;
     Core["make-array"]  = &make_array;
-    //Function definitions
-    Core["function"]    = &define_function;
-    Core["recursive"]   = &define_recursive;
-    Core["fast"]        = &define_fast;
-    Core["inline"]      = &define_inline;
-    Core["inline-recursive"] = &define_inline_recursive;
-    Core["inline-fast"] = &define_inline_fast;
-    Core["declare"]     = &declare;
     Core["call"]        = &direct_call;
-    //Type stuff
     Core["construct"]   = &construct;
-    //FFI
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");
