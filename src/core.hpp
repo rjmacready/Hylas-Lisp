@@ -289,6 +289,7 @@
   {
     //(construct [structure or generic] a_1 a_2 ... a_n)
     string out;
+    string collection = "{";
     string type = printTypeSignature(nth(form,1));
     string type_cdr = string(type,1);
     long nargs = length(form)-2;
@@ -299,6 +300,7 @@
       out += emitCode(nth(form,i));
       inputs[res_version] = latest_type();
     }
+    out += allocate(get_unique_tmp(),type);
     //Find in BasicTypes
     map<string,Type>::iterator seeker = BasicTypes.find(type_cdr);
     if(seeker != BasicTypes.end())
@@ -309,7 +311,24 @@
         //Passed
         if(nargs == seeker->second.members.size())
         {
-          
+          //Iterate over members and compare it to inputs
+          map<long,string>::iterator aide = inputs.begin();
+          for(map<string,pair<long,string> >::iterator finder = seeker->second.members.begin();
+              finder != seeker->second.members.end(); finder++)
+          {
+            //Check types
+            if(finder->second.second == aide->second)
+            {
+              //Passed, write to out
+              collection += aide->second + " " + to_string<long>(aide->first) + ",";
+            }
+            else
+            {
+              printf("ERROR: Type mismatch.");
+              Unwind();
+            }
+            aide++;
+          }
         }
         else
         {
@@ -326,27 +345,53 @@
     //Find in Generics
     for(unsigned long i = 0; i < Generics.size(); i++)
     {
-      map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
-      if(finder != Generics[i].second.specializations.end())
+      if(Generics[i].second.id == typeStructure)
       {
-        //Passed
-        if(nargs == finder->second.size())
+        map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
+        if(finder != Generics[i].second.specializations.end())
         {
-          
+          //Passed
+          if(nargs == finder->second.size())
+          {
+            //Iterate over members and compare it to inputs
+            //Check types
+            map<long,string>::iterator aide = inputs.begin();
+            for(map<string,pair<long,string> >::iterator looker = finder->second.begin();
+              looker != finder->second.end(); looker++)
+            {
+              //Check types
+              if(looker->second.second == aide->second)
+              {
+                //Passed, write to out
+                collection += aide->second + " " + to_string<long>(aide->first) + ",";
+              }
+              else
+              {
+                printf("ERROR: Type mismatch.");
+                Unwind();
+              }
+              aide++;
+            }
+            //Passed, write to out
+          }
+          else
+          {
+            printf("ERROR: Wrong number of args.");
+            Unwind();
+          }
         }
-        else
+        if(i == Generics.size()-1)
         {
-          printf("ERROR: Wrong number of args.");
+          printf("ERROR: Improper type passed to (construct).");
           Unwind();
         }
       }
-      if(i == Generics.size()-1)
-      {
-        printf("ERROR: Improper type passed to (construct).");
-        Unwind();
-      }
     }
     //Emit code
+    collection = cutlast(collection) + "}";
+    out += store(type,collection,get_current_tmp());
+    out += load(get_unique_res(type),type,get_current_tmp());
+    return out;
   }
   
   void init_stdlib()
