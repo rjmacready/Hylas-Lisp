@@ -306,7 +306,7 @@ namespace Hylas
           string str = cutlast(string(val(form),1));
           long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";
-          push("@str" + to_string<unsigned long>(string_version++) + " = global " + type + " c\"" + str + "\\0A\\00\"");
+          push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + str + "\\0A\\00\"");
           out = get_unique_res(type) + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
           break;
         }
@@ -366,9 +366,13 @@ namespace Hylas
         seeker = Core.find(func);
         if(seeker != Core.end())
         {
-          out = callFunction(func,cdr(form));
-          need_entry = true;
+          out = seeker->second(form);
         }
+        else
+        {
+          out = callFunction(func,cdr(form));
+        }
+        need_entry = true;
       }
     }
     for(unsigned long i = 0; i < CodeStack.size(); i++)
@@ -377,7 +381,7 @@ namespace Hylas
     }
     if(need_entry)
     {
-      out = "define " + latest_type() + " @entry(){\n" + out + "}";
+      out = "define " + latest_type() + " @entry(){\n" + out + "\nret " + latest_type() + " " + get_current_res() + "\n}";
     }
     out = tmp + out;
     CodeStack.clear();
@@ -428,14 +432,14 @@ int main()
   using namespace Hylas;
   printf("Hylas Lisp 0.1, by Eudoxia\n");
   init();
-  cout << "Running tests:\n" << endl;
   setjmp(buf);
-  runTests();
+  /*cout << "Running tests:\n" << endl;
+  runTests();*/
   while(true)
   {
     printf("\n>");
     Form* code = read(stdin);
-    string compiledCode = /*"define void masterentry(){\n" +*/ emitCode(code) /*+ "ret void\n}"*/;
+    string compiledCode = Compile(code);
     printf("Read form:\n%s\n",preprint(code).c_str());
     printf("Compiled form:\n%s",compiledCode.c_str());
     //compileIR(compiledCode);

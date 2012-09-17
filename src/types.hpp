@@ -345,14 +345,15 @@
        * And we end up with:
        * (structure derp (element a))
        */
-	  validateStructure(in);
+      validateStructure(in);
       string name = val(nth(in,2));
       Form* code = readString("(structure " + name + ")");
       code = append(code, cdr(cdr(cdr(cdr(in)))));
       out.code = code;
-      for(unsigned long i = 2; i < length(in); i++)
+      for(unsigned long i = 2; i < length(code); i++)
       {
-        Form* current_field = nth(in,i);
+        Form* current_field = nth(code,i);
+        cout << "current field: " << current_field << endl;
         if(islist(current_field))
         {
           if(length(current_field) != 2)
@@ -380,7 +381,7 @@
           printf("ERROR: Structure fields must be lists, not atoms.");
           Unwind();
         }
-	  }
+      }
     }
     else if(type == typeFunction)
     {
@@ -481,7 +482,7 @@
         }
         if(text == "structure")
         {
-          out = writeGeneric(in, typeStructure);
+          out = writeGeneric(in,typeStructure);
           if(checkGenericExistence(name,typeStructure))
           {
             printf("ERROR: Generic already exists.");
@@ -492,7 +493,7 @@
         }
         else if(text == "function")
         {
-          out = writeGeneric(in, typeFunction);
+          out = writeGeneric(in,typeFunction);
           if(checkGenericExistence(name,typeFunction))
           {
             printf("ERROR: Generic already exists.");
@@ -565,6 +566,14 @@
       printf("ERROR: The first argument to (generic) must be either 'function' or 'structure', but a list was found.");
       Unwind();
     }
+  }
+  
+  string genericInterface(Form* form)
+  {
+    Generic tmp = makeGeneric(form);
+    if(val(nth(form,1)) != "method")
+      Generics.push_back(pair<string,Generic>(val(nth(form,2)),tmp));
+    return "";
   }
   
   void init_types()

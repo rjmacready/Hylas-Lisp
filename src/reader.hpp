@@ -143,6 +143,10 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
       ch = next_char(in);
       curline++;
     }
+    if(ch == '!')
+    {
+      while(ch != '\n') ch = next_char(in);
+    }
     if(ch == ')')
       return ")";
     if(ch == '(')

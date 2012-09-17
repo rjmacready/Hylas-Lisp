@@ -299,7 +299,6 @@
   {
     //(construct [structure or generic] a_1 a_2 ... a_n)
     string out;
-    string collection = "{";
     string type = printTypeSignature(nth(form,1));
     string type_cdr = string(type,1);
     long nargs = length(form)-2;
@@ -311,6 +310,7 @@
       inputs[res_version] = latest_type();
     }
     out += allocate(get_unique_tmp(),type);
+    unsigned long allocation_point = tmp_version;
     //Find in BasicTypes
     map<string,Type>::iterator seeker = BasicTypes.find(type_cdr);
     if(seeker != BasicTypes.end())
@@ -327,16 +327,18 @@
               finder != seeker->second.members.end(); finder++)
           {
             //Check types
+            unsigned long pos = 0;
             if(finder->second.second == aide->second)
             {
               //Passed, write to out
-              collection += aide->second + " " + to_string<long>(aide->first) + ",";
+              out += get_unique_tmp() + " = getelementptr inbounds " + type + "* " + get_tmp(allocation_point)
+                  + ", i32 0, i32 " + to_string<unsigned long>(pos) + "\n";
+              out += store(aide->second,get_res(aide->first),get_current_tmp());
+              pos++;
             }
             else
-            {
-              printf("ERROR: Type mismatch.");
-              Unwind();
-            }
+              error(NormalError,"Wrong type: ",finder->second.second," does not match ",
+                      aide->second,".");
             aide++;
           }
         }
@@ -357,10 +359,11 @@
     {
       if(Generics[i].second.id == typeStructure)
       {
+        //Found a structure
         map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
         if(finder != Generics[i].second.specializations.end())
         {
-          //Passed
+          //Found the type in the Generic's specializations
           if(nargs == finder->second.size())
           {
             //Iterate over members and compare it to inputs
@@ -370,15 +373,19 @@
               looker != finder->second.end(); looker++)
             {
               //Check types
+              unsigned long pos = 0;
               if(looker->second.second == aide->second)
               {
                 //Passed, write to out
-                collection += aide->second + " " + to_string<long>(aide->first) + ",";
+                out += get_unique_tmp() + " = getelementptr inbounds " + type + "* " + get_tmp(allocation_point)
+                    + ", i32 0, i32 " + to_string<unsigned long>(pos) + "\n";
+                out += store(aide->second,get_res(aide->first),get_current_tmp());
+                pos++;
               }
               else
               {
-                printf("ERROR: Type mismatch.");
-                Unwind();
+                error(NormalError,"Wrong type: ",looker->second.second," does not match ",
+                      aide->second,".");
               }
               aide++;
             }
@@ -398,13 +405,11 @@
       }
     }
     //Emit code
-    collection = cutlast(collection) + "}";
-    out += store(type,collection,get_current_tmp());
-    out += load(get_unique_res(type),type,get_current_tmp());
+    out += load(get_unique_res(type),type,get_tmp(allocation_point));
     return out;
   }
   
-  string make_array(Form* form)
+  string make_array(Form* form, bool global)
   {
     string out;
     string type;
@@ -425,16 +430,27 @@
     }
     string array_type;
     array_type = "[" + to_string<long>(length(form)-1) + " x " + type + "]";
-    string address = "@array" + to_string<unsigned long>(array_version++);
-    push(address + " = global " + array_type + " zeroinitializer");
-    string tmp;
-    for(i = inputs.size()-1; i >= 0; i--)
+    string address = "%array" + to_string<unsigned long>(++array_version);
+    out += allocate(address,array_type);
+    //push(address + " = global " + array_type + " zeroinitializer");
+    for(i = 0; i < inputs.size(); i++)
     {
-      tmp += type + " " + get_res(inputs[i]) + ",";
+      out += store(type,get_res(inputs[i]),
+                   "getlementptr inbounds (" + array_type + "* " + address +
+                   ", i32 0, i32 " + to_string<unsigned long>(i) + ")");
     }
-    out += store(array_type,"["+cutlast(type)+"]",address);
     out += load(get_unique_res(array_type),array_type,address);
     return out;
+  }
+  
+  string global_array(Form* in)
+  {
+    return make_array(in,true);
+  }
+  
+  string local_array(Form* in)
+  {
+    return make_array(in,false);
   }
   
   void init_stdlib()
@@ -452,6 +468,9 @@
     TopLevel["inline-recursive"] = &define_inline_recursive;
     TopLevel["inline-fast"] = &define_inline_fast;
     TopLevel["declare"]     = &declare;
+    TopLevel["type"]        = &makeType;
+    TopLevel["structure"]   = &makeStructure;
+    TopLevel["generic"]     = &genericInterface;
     //Init Core
     Core["def"]         = &def_local;
     Core["set"]         = &set;
@@ -470,13 +489,13 @@
     Core["frem"]        = &frem;
     Core["icmp"]        = &icmp;
     Core["fcmp"]        = &fcmp;
-    Core["acess"]       = &access;
     Core["begin"]       = &begin;
     Core["if"]          = &simple_if;
     Core["flow"]        = &flow;
-    Core["make-array"]  = &make_array;
-    Core["call"]        = &direct_call;
     Core["construct"]   = &construct;
+    Core["acess"]       = &access;
+    Core["array"]       = &local_array;
+    Core["call"]        = &direct_call;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");

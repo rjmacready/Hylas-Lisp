@@ -93,7 +93,11 @@
     }
   }
   
-  /*string poly_code;
+  /*
+   *    Don't touch this, it's some experimental shit
+   * 
+  
+  string poly_code;
   
   string polymorphicExpansion(Form* form, unsigned int pos)
   {
@@ -385,75 +389,3 @@
       }        
     }
   }
-  
-  /*string callFunction(string func, Form* form)
-  {
-    printf("Calling the function '%s'.\n", func.c_str());
-    map<string,MetaFunction>::iterator find_fn = FunctionTable.find(func);
-    if(find_fn != FunctionTable.end())
-    {
-      printf("All good 0\n");
-      string tmp_code;
-      unsigned long nargs = length(form)-1;
-      vector<string> types;
-      for(unsigned long i = 1; i < nargs; i++)
-      {
-        tmp_code += emitCode(nth(form,i));
-        types.push_back(latest_type());
-      }
-      printf("All good 1\n");
-      for(unsigned long i = 0; i < find_fn->second.versions.size(); i++)
-      {      
-        unsigned long typeindex;
-        printf("All good 2\n");
-        if(!find_fn->second.versions[i].arguments.empty())
-        {
-          printf("All good 3\n");
-          map<string,string> arguments = find_fn->second.versions[i].arguments;
-          map<string,string>::iterator arg_it = arguments.begin();
-          for(;arg_it != arguments.end(); arg_it++)
-          {
-            if(arg_it->second != types[typeindex])
-            {
-              printf("ERROR: Couldn't find the function.");
-              Unwind(); 
-            }
-            typeindex++;
-          }
-          string out = get_unique_res(find_fn->second.versions[i].ret_type);
-          if(find_fn->second.versions[i].fastcc) //If the function is fast or recursive
-            out += " = tail call fastcc ";
-          else
-            out += " = call ccc ";
-          out += func + " ";
-          out += find_fn->second.versions[i].ret_type + " @";
-          out += func + to_string(i) + "(";
-          for(unsigned long argtypes = 0; argtypes < types.size(); argtypes++)
-          {
-            out += types[argtypes] + " " + get_res(argtypes) + ", ";
-          }
-          out = string(out,0,out.length()-1) + ")";
-        }
-        else if(cdr(form) == NULL)
-        {
-          string out = get_unique_res(find_fn->second.versions[i].ret_type);
-          if(find_fn->second.versions[i].fastcc) //If the function is fast or recursive
-            out += " = tail call fastcc ";
-          else
-            out += " = call ccc ";
-          out += find_fn->second.versions[i].ret_type + " @";
-          out += func + to_string(i) + "()";
-          return out;
-        }
-        else
-        {
-          printf("ERORR: Couldn't find the function.");
-          Unwind();
-        }
-      }
-      printf("ERORR: Couldn't find the function.");
-      Unwind();
-    }
-    printf("ERORR: Couldn't find the function.");
-    Unwind();
-  }*/

@@ -8,13 +8,7 @@
     else
       longjmp(buf,0);
   }
-  
-  template <typename T>
-  void var_print(const T& value)
-  {
-    cout << value << endl;
-  }
-  
+ 
   string at(Form* in)
   {
     if(master.output == HTML)
@@ -26,12 +20,18 @@
   #define ReaderError	"Reader Error:"
   #define NormalError	"Normal Error:"
   #define GenericError	"Generic Error:"
-  #define MacroError		"Macro Error:"
+  #define MacroError	"Macro Error:"
 
-  template <typename... T>
-  void signal_error(string type, const T&... text)
+  template<typename T>
+  void error(T const& t)
+  {
+    cout << t;
+  }
+  
+  template<typename ... T>
+  void error(string type, T const& ... text)
   {
     cout << type;
-    var_print(text...);
-	Unwind();
+    error(text ...);
+    Unwind();
   }
