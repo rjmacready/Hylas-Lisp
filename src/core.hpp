@@ -439,7 +439,8 @@
                    "getlementptr inbounds (" + array_type + "* " + address +
                    ", i32 0, i32 " + to_string<unsigned long>(i) + ")");
     }
-    out += load(get_unique_res(array_type),array_type,address);
+    out += get_unique_res(type + "*") + " = getelementptr inbounds " + array_type + "* " + address
+        + ", i32 0, i32 0";
     return out;
   }
   
@@ -451,6 +452,35 @@
   string local_array(Form* in)
   {
     return make_array(in,false);
+  }
+  
+  string nth_array(Form* in)
+  {
+    string out;
+    //Code for address
+    out += emitCode(nth(form,1));
+    long adress_location = res_version;
+    //Code for array
+    out += emitCode(nth(form,2));
+    out += get_unique_tmp() + " = getelementptr inbounds " + latest_type() + "* " + get_current_res()
+        + ", i64 " + get_res(address_location);
+    out += load(get_unique_res(cutlast(latest_type())),latest_type(),get_current_tmp());
+    return out;
+  }
+  
+  string mem_allocate(Form* in)
+  {
+    
+  }
+  
+  string mem_store(Form* in)
+  {
+   
+  }
+  
+  string mem_load(Form* in)
+  {
+   
   }
   
   void init_stdlib()
@@ -495,7 +525,11 @@
     Core["construct"]   = &construct;
     Core["acess"]       = &access;
     Core["array"]       = &local_array;
+    Core["nth"]         = &nth_array;
     Core["call"]        = &direct_call;
+    Core["allocate"]    = &mem_allocate;
+    Core["store"]       = &mem_store;
+    Core["load"]        = &mem_load;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");
