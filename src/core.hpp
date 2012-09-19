@@ -471,9 +471,10 @@
   string mem_allocate(Form* in)
   {
     //%x = allocate [type]
-    string type = val(nth(form,1));
-    string out = allocate(type,get_unique_tmp());
-    out += allocate(type,get_unique_res(type+"*"));
+    string type = printTypeSignature(nth(in,1));
+    string out = allocate(get_unique_tmp(),type);
+    out += allocate(get_unique_res(type+"*"),type);
+    return out;
   }
   
   string mem_store(Form* in)
@@ -481,11 +482,11 @@
     //%x = store [type] [value], [type]* [address]
     string out;
     //emit value 
-    out += emitCode(nth(form,1));
+    out += emitCode(nth(in,1));
     string type = latest_type();
     unsigned long version = res_version;
     //emit address
-    out += emitCode(nth(form,2));
+    out += emitCode(nth(in,2));
     if(cutlast(latest_type()) != type)
       error(NormalError,"The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
     out += store(type,get_res(version),get_current_res());
@@ -494,7 +495,14 @@
   
   string mem_load(Form* in)
   {
-    //%x = load [type] [address]; Don't add an asterisk to the type! The type of the address must already be a pointer!
+    //%x = load [type] [address]; Don't add an asterisk to the type!
+    //The type of the address must already be a pointer!
+    //emit address
+    string out = emitCode(nth(in,1));
+    string type = latest_type();
+    if(type[type.length()-1] != '*')
+      error(NormalError,"Address is not a pointer.");
+    out += load(get_unique_res(cutlast(type)),type,get_current_res());
   }
   
   void init_stdlib()
