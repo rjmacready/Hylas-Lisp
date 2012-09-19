@@ -367,11 +367,7 @@ namespace Hylas
       }
       else
       {
-        seeker = Core.find(func);
-        if(seeker != Core.end())
-          out = seeker->second(form);
-        else
-          out = callFunction(func,cdr(form));
+        emitCode(form);
       }
     }
     for(unsigned long i = 0; i < CodeStack.size(); i++)
