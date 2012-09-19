@@ -1,11 +1,12 @@
   jmp_buf buf;
   bool testmode = false;
-  unsigned char errormode;
-    
+      
   #define NormalError   0
   #define ReaderError   1
   #define GenericError  2
   #define MacroError    3
+  
+  unsigned char errormode = NormalError;
   
   inline void reseterror() { errormode = NormalError; }
   
@@ -20,21 +21,24 @@
   string at(Form* in)
   {
     if(master.output == HTML)
-      return (string)"\nLine " + to_string<long>(in->line) + ", column "
-        + to_string<int>(in->column) + (string)":\n" + in;
-    else
       return "<br><em>Line " + to_string<long>(in->line) + ", column "
         + to_string<int>(in->column) + ":</em><br>" + in;
+    else
+      return (string)"\nLine " + to_string<long>(in->line) + ", column "
+        + to_string<int>(in->column) + (string)":\n" + in;
   }
   
-  template<typename T>
-  void error(T const& t)
+  void error_print() {} // termination version
+  
+  template<typename Arg1, typename... Args>
+  void error_print(const Arg1& arg1, const Args&... args)
   {
-    cout << t;
+      cout << arg1;
+      error_print(args...); // note: arg1 does not appear here!
   }
   
-  template<typename ... T>
-  void error(T const& ... text)
+  template<typename... T>
+  void error(Form* head, T const& ... text)
   {
     switch(errormode)
     {
@@ -48,22 +52,23 @@
         if(master.output == HTML)
           cout << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
         else
-          cout <<  "Reader Error: ";
+          cout << "Reader Error: ";
         break;
       case GenericError:
         if(master.output == HTML)
           cout << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
         else
-          cout <<  "Error during Generic Expansion: ";
+          cout << "Error during Generic Expansion: ";
         break;
       case MacroError:
         if(master.output == HTML)
           cout << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
         else
-          cout <<  "Error during Macro Expansion: ";
+          cout << "Error during Macro Expansion: ";
         break;        
     }
-    error(text ...);
+    error_print(text...);
+    cout << at(head);
     if(master.output == HTML)
       cout << "</div>";
     Unwind();

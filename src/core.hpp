@@ -338,7 +338,7 @@
               pos++;
             }
             else
-              error(NormalError,"Wrong type: ",finder->second.second," does not match ",
+              error(form,"Wrong type: ",finder->second.second," does not match ",
                       aide->second,".");
             aide++;
           }
@@ -385,7 +385,7 @@
               }
               else
               {
-                error(NormalError,"Wrong type: ",looker->second.second," does not match ",
+                error(form,"Wrong type: ",looker->second.second," does not match ",
                       aide->second,".");
               }
               aide++;
@@ -421,8 +421,8 @@
       out += emitCode(nth(form,i));
       if(!type.empty())
         if(latest_type() != type)
-          error("When building an array, the types of all the elements must match.",
-                "The first type mismatch occured at '",nth(form,i),"'.",at(form));
+          error(form,"When building an array, the types of all the elements must match.",
+                "The first type mismatch occured at '",nth(form,i),"'.");
       inputs.push_back(res_version);
       type = latest_type();
     }
@@ -491,7 +491,7 @@
     //emit address
     out += emitCode(nth(in,2));
     if(cutlast(latest_type()) != type)
-      error("The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
+      error(in,"The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
     out += store(type,get_res(version),get_current_res());
     return out;
   }
@@ -504,7 +504,7 @@
     string out = emitCode(nth(in,1));
     string type = latest_type();
     if(type[type.length()-1] != '*')
-      error("Address is not a pointer.");
+      error(in,"Address is not a pointer.");
     out += load(get_unique_res(cutlast(type)),type,get_current_res());
     return out;
   }
@@ -518,7 +518,7 @@
   string toplevel_asm(Form* in)
   {
     if(cdr(in) == NULL)
-      error("No Assembly code provided.",at(in));
+      error(in,"No Assembly code provided.");
     return (string)"module asm \"" + cdr(in) + "\"\n";
   }
   
@@ -529,8 +529,8 @@
     string dialect = val(nth(in,2));
     string code = print(cdr(cdr(cdr(in))));
     if(dialect != "Intel" && dialect != "ATT")
-      error("Unknown assembly dialect: Only 'Intel' and 'ATT' are supported, '"
-      ,dialect,"' was given.",at(in));
+      error(in,"Unknown assembly dialect: Only 'Intel' and 'ATT' are supported, '"
+      ,dialect,"' was given.");
     out = allocate(get_unique_tmp(),type);
     out += get_unique_tmp() + " = call " + type + " asm "
         + ((dialect == "Intel" ? "inteldailect" : "")) + " \"" + code + "\", ""()";

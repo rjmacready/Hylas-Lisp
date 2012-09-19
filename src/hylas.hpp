@@ -123,9 +123,8 @@ namespace Hylas
   ST SymbolTable;
   #define ScopeDepth SymbolTable.size()-1
   
-  #define error_unbound(x)        \
-  printf("ERROR:Symbol '%s' is unbound.",print(x).c_str()); \
-  Unwind();
+  inline void error_unbound(Form* x)
+  { error(x,"Symbol '",print(x),"' is unbound."); }
   
   string* lookup(string in)
   {
@@ -185,7 +184,7 @@ namespace Hylas
   {
     string* tmp = lookup(name);
     if(tmp == NULL)
-    { error("Can't find the register '",name,"'."); }
+    { printf("Can't find symbol."); Unwind(); }
     return *tmp;
   }
   
@@ -242,7 +241,7 @@ namespace Hylas
   {
     string out;
     if(form == NULL)
-      error("Can't emit code for the null form ().");
+      error(form,"Can't emit code for the null form.");
     else if(isatom(form))
     {
       switch(analyze(val(form)))
@@ -300,9 +299,7 @@ namespace Hylas
           string sym = val(form);
           string* tmp = lookup(sym);
           if(tmp == NULL)
-          {
             error_unbound(form);
-          }
           else
             out = load(get_unique_res(*tmp),*tmp,"%"+sym+to_string(ScopeDepth));
           break;
@@ -333,7 +330,7 @@ namespace Hylas
     else
     {
       if(islist(car(form)))
-        error("Lists can't be used as function names in calls. Until I implement lambda.",at(form));
+        error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
       string func = val(car(form));
       map<string,hFuncPtr>::iterator seeker = Core.find(func);
       if(seeker != Core.end())
@@ -349,7 +346,7 @@ namespace Hylas
     string out;
     string tmp;
     if(form == NULL)
-      error("Can't emit code for the null form.");
+      error(form,"Can't emit code for the null form.");
     else if(isatom(form))
     {
       out = emitCode(form);
@@ -357,7 +354,7 @@ namespace Hylas
     else
     {
       if(islist(car(form)))
-        error("Lists can't be used as function names in calls. Until I implement lambda.",at(form));
+        error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
       string func = val(car(form));
       map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
       if(seeker != TopLevel.end())

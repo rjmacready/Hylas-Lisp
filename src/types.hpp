@@ -68,7 +68,7 @@
         return true;
       return false;      
     }
-    error("isArgument must be given an atom, but a list was given.",at(in));
+    error(in,"isArgument must be given an atom, but a list was given.");
   }
   
   Form* editForm(Form* in, map<string,Form*> replacements)
@@ -150,14 +150,14 @@
         }
         else
         {
-          error("Came across an unknown type: '",tmp,"'.",at(form));
+          error(form,"Came across an unknown type: '",tmp,"'.");
         }
       }
     }
     else if(islist(form))
     {
       if(islist(car(form)))
-        error("The name of a Generic type must be a symbolic atom, not a list.",at(form));
+        error(form,"The name of a Generic type must be a symbolic atom, not a list.");
       string type_name = val(car(form));
       if(type_name == "pointer")
       {
@@ -169,9 +169,9 @@
         {
           if(Generics[i].second.arguments.size() != length(form)-1)
           {
-            error("Wrong number of arguments to specialize the Generic '",
+            error(form,"Wrong number of arguments to specialize the Generic '",
                   type_name,"'.",to_string<long>(Generics[i].second.arguments.size()),
-                  " are required, but ",to_string<unsigned long>(length(form)-1)," were given.",at(form));
+                  " are required, but ",to_string<unsigned long>(length(form)-1)," were given.");
           }
           else
           {
@@ -205,8 +205,7 @@
           }
         }
       }
-      error("An unknown Generic type, '",type_name,"' was provided for specialization.",
-            at(form));
+      error(form,"An unknown Generic type, '",type_name,"' was provided for specialization.");
     }
   }
   
@@ -221,8 +220,8 @@
     tmp.id = typeSimple;
     if(length(in) != 3)
     {
-      error("(type) takes exactly 3 arguments. ",to_string<long>(length(in)),
-            " were given.",at(in));
+      error(in,"(type) takes exactly 3 arguments. ",to_string<long>(length(in)),
+            " were given.");
     }
     if(isatom(cadr(in)))
     {

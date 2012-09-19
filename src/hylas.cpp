@@ -6,8 +6,8 @@ int main()
   printf("Hylas Lisp 0.5, by Eudoxia\n");
   init();
   setjmp(buf);
-  cout << "Running tests:\n" << endl;
-  runTests();
+  /*cout << "Running tests:\n" << endl;
+  runTests();*/
   while(true)
   {
     printf("\n>");

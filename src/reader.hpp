@@ -114,8 +114,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
     return car(node);
   }
 
-  long curline;
-  int curcolumn;
+  long curline = 0;
+  int curcolumn = 0;
 
   inline Form* makeForm(string in, bool tag)
   { Form* self = new Form; tag(self) = tag; val(self) = in;
@@ -145,6 +145,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     {
       ch = next_char(in);
       curline++;
+      curcolumn = 0;
     }
     if(ch == '!')
     {
@@ -243,6 +244,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     FILE* ptr = fopen(filename.c_str(),"r");
     Form* tmp = read(ptr);
     fclose(ptr);
+    clear_reader();
     reseterror();
     return tmp;
   }
@@ -254,6 +256,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     fputs(in.c_str(),ptr);
     fputs("\n",ptr);
     fclose(ptr);
+    clear_reader();
     reseterror();
     return readFile("reader.tmp");
   }

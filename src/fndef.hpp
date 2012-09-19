@@ -75,20 +75,20 @@
   void validate_function(Form* form)
   {
     if(length(form) < 2)
-      error("Can't define a function with no name.",at(form));
+      error(form,"Can't define a function with no name.");
     else if(length(form) < 3)
-      error("Can't define a function with no return type.",at(form));
+      error(form,"Can't define a function with no return type.");
     else if(length(form) < 4)
-      error("Can't define a function with no argument list.",at(form));
+      error(form,"Can't define a function with no argument list.");
     if(length(form) < 5)
-      error("Can't define a function with no body (The block of code to execute).",at(form));
+      error(form,"Can't define a function with no body (The block of code to execute).");
     if(tag(nth(form,name_pos)) != Atom)
-      error("Can't use a list as a function name.",at(form));
+      error(form,"Can't use a list as a function name.");
     else if(analyze(val(nth(form,name_pos))) != Symbol)
-      error("Can't use a non-symbolic atom as a function name.",at(form));
+      error(form,"form,Can't use a non-symbolic atom as a function name.");
     if(args != NULL)
       if(tag(args) != List)
-        error("The argument list must be a list.",at(form));
+        error(form,"The argument list must be a list.");
   }
   
   /*
