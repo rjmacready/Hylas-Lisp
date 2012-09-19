@@ -470,17 +470,31 @@
   
   string mem_allocate(Form* in)
   {
-    
+    //%x = allocate [type]
+    string type = val(nth(form,1));
+    string out = allocate(type,get_unique_tmp());
+    out += allocate(type,get_unique_res(type+"*"));
   }
   
   string mem_store(Form* in)
   {
-    
+    //%x = store [type] [value], [type]* [address]
+    string out;
+    //emit value 
+    out += emitCode(nth(form,1));
+    string type = latest_type();
+    unsigned long version = res_version;
+    //emit address
+    out += emitCode(nth(form,2));
+    if(cutlast(latest_type()) != type)
+      error(NormalError,"The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
+    out += store(type,get_res(version),get_current_res());
+    return out;
   }
   
   string mem_load(Form* in)
   {
-    
+    //%x = load [type] [address]; Don't add an asterisk to the type! The type of the address must already be a pointer!
   }
   
   void init_stdlib()

@@ -12,9 +12,9 @@
   string at(Form* in)
   {
     if(master.output == HTML)
-      return (string)"(Line " + to_string<long>(in->line) + ", column " + to_string<int>(in->column) + (string)")";
+      return (string)"(Line " + to_string<long>(in->line) + ", column " + to_string<int>(in->column) + (string)")\n";
     else
-      return "<em>(Line " + to_string<long>(in->line) + ", column " + to_string<int>(in->column) + ")</em>";
+      return "<em>(Line " + to_string<long>(in->line) + ", column " + to_string<int>(in->column) + ")</em><br>";
   }
   
   #define ReaderError	"Reader Error:"
