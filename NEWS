@@ -3,3 +3,9 @@ Sep 14 2012
   + (access)
   + strings: compilation thereof
   + arrays
+
+Sep 18 2012
+  + nth of array
+  * errors
+  + character detection
+  + character compilation

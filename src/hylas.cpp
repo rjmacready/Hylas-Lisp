@@ -301,8 +301,20 @@ namespace Hylas
             out = load(get_unique_res(*tmp),*tmp,"%"+sym+to_string(ScopeDepth));
           break;
         }
+        case Character:
+        {
+          string c = string(val(form),1,val(form).length()-2);
+          string address = "@str" + to_string<unsigned long>(++string_version);
+          out = allocate(get_unique_tmp(),"i8");
+          push(address + " = global [2 x i8] c\"" + c + "\0\0\"");
+          out += get_unique_tmp() + " = load i8* getelementptr inbounds ([2 x i8]* " + address + ", i32 0, i64 0)";
+          out += store("i8",get_current_tmp(),get_tmp(tmp_version-1));
+          out += load(get_unique_res("i8"),"i8",get_current_tmp());
+          break;
+        }
         case String:
         {
+          //Remember strings come with their double quotes at the end
           string str = cutlast(string(val(form),1));
           long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";

@@ -1,3 +1,2 @@
-  map<string,Lambda> SafeMacros;
-  map<string,Lambda> SimpleMacros;
+  map<string,Lambda> Macros;
   map<string,Lambda> FullMacros;

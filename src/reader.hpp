@@ -1,4 +1,6 @@
   map<string,string> WordMacros;
+  map<string,string> Prefixes;
+  map<string,string> Postfixes;
   
   void addWordMacro(string word, string replacement)
   {
@@ -137,6 +139,7 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
   string next_token(FILE *in)
   {
     char ch = next_char(in);
+    char tmp;
     while(isspace(ch)) ch = next_char(in);
     if(ch == '\n')
     {
@@ -145,7 +148,21 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
     }
     if(ch == '!')
     {
-      while(ch != '\n') ch = next_char(in);
+      tmp = ch;
+      ch = next_char(in);
+      if(ch == '-')
+      {
+        ch = next_char(in);
+        while(true)
+        {
+          if(tmp == '-' && ch == '!')
+            { ch = next_char(in); break; }
+          tmp = ch;
+          ch = next_char(in);
+        }
+      }
+      else
+        while(ch != '\n') ch = next_char(in);
     }
     if(ch == ')')
       return ")";
@@ -155,7 +172,6 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
     {
       char text[10000];
       text[0] = '"';
-      char tmp;
       int index = 1;
       ch = next_char(in);
       while(true)
@@ -270,36 +286,47 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
   #define BooleanTrue	        0
   #define BooleanFalse	        1
   #define Integer	        2
-  #define Real		        3
-  #define Symbol	        4
-  #define String	        5
-  #define Unidentifiable        6
+  #define Character             3
+  #define Real		        4
+  #define Symbol	        5
+  #define String	        6
+  #define Unidentifiable        7
   
   unsigned char analyze(string input)
   {
     if(input.length() < 1)
       Unwind();
-    bool quoteFound	= false;
-    unsigned int quotePosition		= 0;
-    bool minusSignFound	= false;
-    unsigned int minusSignPosition	= 0;
-    unsigned int numberOfMinusSigns	= 0;
-    bool periodFound	= false;
-    unsigned int periodPosition		= 0;
-    unsigned int numberOfPeriods	= 0;
-    bool characterFound	= false;
-    bool numericalFound	= false;
-    bool eFound		= false;
-    unsigned int ePosition		= 0;
-    unsigned int numberOfEs		= 0;
-    for(unsigned int i = 0; i <= input.length(); i++)
+    bool doubleQuoteFound               = false;
+      unsigned long doubleQuotePosition	= 0;
+    bool singleQuoteFound               = false;
+      unsigned long singleQuotePosition = 0;
+    bool minusSignFound	                = false;
+      unsigned long minusSignPosition	= 0;
+      unsigned long numberOfMinusSigns	= 0;
+    bool periodFound	                = false;
+      unsigned long periodPosition	= 0;
+      unsigned long numberOfPeriods	= 0;
+    bool characterFound	                = false;
+    bool numericalFound                 = false;
+    bool eFound		                = false;
+      unsigned long ePosition		= 0;
+      unsigned long numberOfEs		= 0;
+    for(unsigned long i = 0; i <= input.length(); i++)
     {
       if(input[i] == '"')
       {
-        if(!quoteFound)
+        if(!doubleQuoteFound)
         {
-          quoteFound = true;
-          quotePosition = i;
+          doubleQuoteFound = true;
+          doubleQuotePosition = i;
+        }
+      }
+      if(input[i] == '\'')
+      {
+        if(!singleQuoteFound)
+        {
+          singleQuoteFound = true;
+          singleQuotePosition = i;
         }
       }
       else if(input[i] == '-')
@@ -338,12 +365,20 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
         numberOfEs++;
       }
     }
-    if(quoteFound)
+    if(doubleQuoteFound)
     {
-      if(quotePosition == 0)
+      if(doubleQuotePosition == 0)
       {
         if(input[input.length()-1] == '"')
           return String;
+      }
+    }
+    if(singleQuoteFound)
+    {
+      if(singleQuotePosition == 0)
+      {
+        if(input[input.length()-1] == '\'')
+          return Character;
       }
     }
     if(numericalFound)

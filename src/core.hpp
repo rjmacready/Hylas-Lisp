@@ -458,10 +458,10 @@
   {
     string out;
     //Code for address
-    out += emitCode(nth(form,1));
-    long adress_location = res_version;
+    out += emitCode(nth(in,1));
+    long address_location = res_version;
     //Code for array
-    out += emitCode(nth(form,2));
+    out += emitCode(nth(in,2));
     out += get_unique_tmp() + " = getelementptr inbounds " + latest_type() + "* " + get_current_res()
         + ", i64 " + get_res(address_location);
     out += load(get_unique_res(cutlast(latest_type())),latest_type(),get_current_tmp());
@@ -475,12 +475,12 @@
   
   string mem_store(Form* in)
   {
-   
+    
   }
   
   string mem_load(Form* in)
   {
-   
+    
   }
   
   void init_stdlib()
@@ -523,7 +523,7 @@
     Core["if"]          = &simple_if;
     Core["flow"]        = &flow;
     Core["construct"]   = &construct;
-    Core["acess"]       = &access;
+    Core["access"]      = &access;
     Core["array"]       = &local_array;
     Core["nth"]         = &nth_array;
     Core["call"]        = &direct_call;

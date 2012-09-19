@@ -25,13 +25,13 @@
   template<typename T>
   void error(T const& t)
   {
-    cout << t;
+    cerr << t;
   }
   
   template<typename ... T>
   void error(string type, T const& ... text)
   {
-    cout << type;
+    cerr << type;
     error(text ...);
     Unwind();
   }
