@@ -3,7 +3,7 @@
     string out = "{\n";
     for(map<string,Form*>::iterator i = in.begin(); i != in.end(); i++)
     {
-      out += "\t" + i->first + " : " + preprint(i->second) + "\n";
+      out += "\t" + i->first + " : " + i->second + "\n";
     }
     return out + "}\n";
   }
@@ -90,7 +90,7 @@
     cout << "   Generic methods: " << endl;
     for(i = 0; i < in.methods.size(); i++)
     {
-      cout << "      " << preprint(in.methods[i]) << " ";
+      cout << "      " << in.methods[i] << " ";
     }
     cout << endl;
   }

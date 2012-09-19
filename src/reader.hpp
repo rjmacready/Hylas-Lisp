@@ -88,7 +88,7 @@
     {
       printf("ERROR: nth() signalled and 'out of range' error \
 when trying to access the %li-th element of the form:\n%s\n\
-whose length is %li.",location,preprint(in).c_str(),length(in));
+whose length is %li.",location,print(in).c_str(),length(in));
       Unwind();
     }
     if(location == 0)
@@ -106,7 +106,7 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
       {
         printf("ERROR: nth() signalled and 'out of range' error \
 when trying to access the %li-th element of the form:\n%s\n\
-whose length is %li.",location,preprint(in).c_str(),length(in));
+whose length is %li.",location,print(in).c_str(),length(in));
         Unwind();
       }
       --location;
@@ -225,6 +225,7 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
   
   Form* read(FILE* in)
   {
+    errormode = ReaderError;
     string token = next_token(in);
     if(token == "(")
       return read_tail(in);
@@ -232,55 +233,61 @@ whose length is %li.",location,preprint(in).c_str(),length(in));
       return NULL;
     Form* result = makeForm(token,Atom);
     clear_reader();
+    reseterror();
     return result;
   }
   
   Form* readFile(string filename)
   {
+    errormode = ReaderError;
     FILE* ptr = fopen(filename.c_str(),"r");
     Form* tmp = read(ptr);
     fclose(ptr);
+    reseterror();
     return tmp;
   }
   
   Form* readString(string in)
   {
+    errormode = ReaderError;
     FILE* ptr = fopen("reader.tmp","w+");
     fputs(in.c_str(),ptr);
     fputs("\n",ptr);
     fclose(ptr);
+    reseterror();
     return readFile("reader.tmp");
   }
   
-  string preprint(Form* in)
+  string print(Form* in)
   {
-    string out;
-    if(in == NULL)
-      return "()";
-    else if(islist(in))
+    if(master.output == HTML)
     {
-      out += "(";
-      out += preprint(car(in));
-      in = cdr(in);
-      while(in != NULL && islist(in))
-      {
-        out += " ";
-        out += preprint(car(in));
-        in = cdr(in);
-      }
-      out += ")";
-      return out;
+      
     }
     else
     {
-      return val(in);
+      string out;
+      if(in == NULL)
+        return "()";
+      else if(islist(in))
+      {
+        out += "(";
+        out += print(car(in));
+        in = cdr(in);
+        while(in != NULL && islist(in))
+        {
+          out += " ";
+          out += print(car(in));
+          in = cdr(in);
+        }
+        out += ")";
+        return out;
+      }
+      else
+      {
+        return val(in);
+      } 
     }
-  }
-  
-  ostream& operator<<(ostream& out, Form* in)
-  {
-    out << preprint(in);
-    return out;
   }
   
   #define BooleanTrue	        0

@@ -75,22 +75,20 @@
   void validate_function(Form* form)
   {
     if(length(form) < 2)
-      { printf("ERROR: No name."); Unwind(); }
+      error("Can't define a function with no name.",at(form));
     else if(length(form) < 3)
-      { printf("ERROR: No return type."); Unwind(); }
+      error("Can't define a function with no return type.",at(form));
     else if(length(form) < 4)
-      { printf("ERROR: No argument list."); Unwind(); }
+      error("Can't define a function with no argument list.",at(form));
     if(length(form) < 5)
-      { printf("ERROR: No body."); Unwind(); }
+      error("Can't define a function with no body (The block of code to execute).",at(form));
     if(tag(nth(form,name_pos)) != Atom)
-      { printf("ERROR: Can't use a list as a function name."); Unwind(); }
+      error("Can't use a list as a function name.",at(form));
     else if(analyze(val(nth(form,name_pos))) != Symbol)
-      { printf("ERROR: Can't use a non-symbol as a function name."); Unwind(); }
+      error("Can't use a non-symbolic atom as a function name.",at(form));
     if(args != NULL)
-    {
       if(tag(args) != List)
-      { printf("ERROR: The argument list must be a list."); Unwind(); }
-    }
+        error("The argument list must be a list.",at(form));
   }
   
   /*
@@ -177,14 +175,14 @@
                     printf("ERROR: The first element in every pair of typecase form must be a symbolic atom.");
                     Unwind();
                   }
-                  else if(analyze(preprint(car(nth(current,i)))) == Symbol)
+                  else if(analyze(print(car(nth(current,i)))) == Symbol)
                   {
                     printf("ERROR: The first element in every pair of typecase form must be a symbolic atom.");
                     Unwind();
                   }
                   else
                   {
-                    string replacement_type = preprint(car(nth(current,i)));
+                    string replacement_type = print(car(nth(current,i)));
                     Form* replacement_code = cdr(nth(current,i));
                   }
                 }
@@ -195,7 +193,7 @@
       }
     }
     else
-      return preprint(form);
+      return print(form);
   }*/
   
   string defineFunction(Form* form, fnType fn_type, bool inlining)
@@ -225,7 +223,7 @@
       for(long i = 0; i < length(args); i++)
       {
         current_arg = nth(args,i);
-        //printf("\nAnalyzing:%s",preprint(current_arg).c_str());
+        //printf("\nAnalyzing:%s",print(current_arg).c_str());
         if(tag(current_arg) == List)
         {
           if(tag(nth(current_arg,0)) != Atom)
@@ -240,7 +238,7 @@
             if(seeker != fn_args.end())
             {
               printf("ERROR: Argument name '%s' was already defined in this argument list:\n%s",
-                     argname.c_str(),preprint(nth(form,2)).c_str());
+                     argname.c_str(),print(nth(form,2)).c_str());
             }
             else
             {
@@ -281,7 +279,7 @@
       {
         arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ",";
       }
-      tmp_code = "define " + fn_ret_type + (string)" @" + fn_name + to_string(seeker->second.versions.size()-1)
+      tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + to_string(seeker->second.versions.size()-1)
       + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code)) + "){\n";
     }
     else
@@ -295,7 +293,7 @@
       {
         arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ", ";
       }
-      tmp_code = "define " + fn_ret_type + (string)" @" + fn_name + "0" + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code))
+      tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + "0" + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code))
       + "){\n";
     }
     //Compile the code
@@ -366,7 +364,7 @@
             }
             //Found a matching function
             callcode += get_unique_res(seeker->second.versions[i].ret_type);
-            callcode += " = " + (string)(seeker->second.versions[i].tco ? "tail call " : "call ");
+            callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
             callcode += seeker->second.versions[i].fastcc ? "fastcc " : "ccc ";
             callcode += seeker->second.versions[i].ret_type + " @" + func + to_string(i) + (arguments.empty() ? "" :"(");
             for(arg_iterator = seeker->second.versions[i].arguments.begin();

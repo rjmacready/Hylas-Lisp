@@ -17,7 +17,7 @@
   
   string dump_form(Form* input)
   {
-    string out = (string)"Form: " + (isatom(input) ? "Atom" : "List") + (string)"\n'";
-    out += preprint(input) + "'\n";
+    string out = (string)"Form: " + (isatom(input) ? "Atom" : "List") + "\n'";
+    out += input + (string)"'\n";
     return out + "(Line " + to_string(input->line) + ", column " + to_string(input->column) + ")";
   }

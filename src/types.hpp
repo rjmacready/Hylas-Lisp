@@ -20,7 +20,6 @@
   #define typeFunction 2
   #define typeMethod    3
   
-  
   struct BaseType
   {
     unsigned char id;
@@ -69,8 +68,7 @@
         return true;
       return false;      
     }
-    printf("ERROR: Can't provide a list to isArgument.");
-    Unwind();
+    error("isArgument must be given an atom, but a list was given.",at(in));
   }
   
   Form* editForm(Form* in, map<string,Form*> replacements)
@@ -111,6 +109,7 @@
   
   string specializeType(Generic* in, map<string,Form*> replacements, string signature)
   {
+    errormode = GenericError;
     Form* specialization_code = editForm(in->code, replacements);
     string out = signature + " = type { ";
     string type;
@@ -121,15 +120,13 @@
       out += type + ",";
     }
     out = cutlast(out)+" }\n";
-    printf("Specializing methods!\n");
     //Specialize methods
     for(unsigned long i = 0; i < in->methods.size(); i++)
     {
-      printf("Specializing method %lu!\n",i);
-      printf("Method code:\n%s\n",preprint(editForm(in->methods[i],replacements)).c_str());
       out += "\n" + emitCode(editForm(in->methods[i],replacements));
     }
     //Return the code for the specialization
+    reseterror();
     return out;
   }
   
@@ -153,16 +150,14 @@
         }
         else
         {
-          printf("ERROR: Came across an unknown type: '%s'.",tmp.c_str());
-          Unwind();
+          error("Came across an unknown type: '",tmp,"'.",at(form));
         }
       }
     }
     else if(islist(form))
     {
       if(islist(car(form)))
-      { printf("ERROR: The name of a generic type can't be a list.\nCode: %s",preprint(form).c_str());
-        Unwind(); }
+        error("The name of a Generic type must be a symbolic atom, not a list.",at(form));
       string type_name = val(car(form));
       if(type_name == "pointer")
       {
@@ -174,8 +169,9 @@
         {
           if(Generics[i].second.arguments.size() != length(form)-1)
           {
-            printf("ERROR: Wrong number of generic type arguments.");
-            Unwind();
+            error("Wrong number of arguments to specialize the Generic '",
+                  type_name,"'.",to_string<long>(Generics[i].second.arguments.size()),
+                  " are required, but ",to_string<unsigned long>(length(form)-1)," were given.",at(form));
           }
           else
           {
@@ -209,8 +205,8 @@
           }
         }
       }
-      printf("ERROR: Came across an unknown generic type: '%s'.",type_name.c_str());
-      Unwind();
+      error("An unknown Generic type, '",type_name,"' was provided for specialization.",
+            at(form));
     }
   }
   
@@ -225,8 +221,8 @@
     tmp.id = typeSimple;
     if(length(in) != 3)
     {
-      printf("ERROR: Wrong number of arguments to (type).");
-      Unwind();
+      error("(type) takes exactly 3 arguments. ",to_string<long>(length(in)),
+            " were given.",at(in));
     }
     if(isatom(cadr(in)))
     {

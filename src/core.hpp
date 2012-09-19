@@ -224,7 +224,8 @@
   
   string embed_llvm(Form* form)
   {
-    return preprint(cdr(form));
+    string out = print(cdr(form));
+    return string(out,1,out.length()-2);
   }
   
   string define_function(Form* form)
@@ -287,7 +288,7 @@
       out += emitCode(nth(form,i));
       inputs[res_version] = latest_type();
     }
-    out += (string)"call " + ret_type + " " + c_conv + (string)" @" + name + (string)"(";
+    out += (string)"call " + ret_type + " " + c_conv + " @" + name + "(";
     for(map<long,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
     {
       out += seeker->second + " " + get_res(seeker->first) + ",";
@@ -419,28 +420,30 @@
     {
       out += emitCode(nth(form,i));
       if(!type.empty())
-      {
         if(latest_type() != type)
-        {
-          printf("ERROR: When trying to construct an array, not all the types matched.");
-        }
-      }
+          error("When building an array, the types of all the elements must match.",
+                "The first type mismatch occured at '",nth(form,i),"'.",at(form));
       inputs.push_back(res_version);
       type = latest_type();
     }
     string array_type;
     array_type = "[" + to_string<long>(length(form)-1) + " x " + type + "]";
-    string address = "%array" + to_string<unsigned long>(++array_version);
-    out += allocate(address,array_type);
-    //push(address + " = global " + array_type + " zeroinitializer");
+    string address = (string)(global ? "@" : "%") + "array" + to_string<unsigned long>(++array_version);
+    unsigned long address_pos;
+    if(global)
+      push(address + " = global " + array_type + " zeroinitializer");
+    else
+    {
+      out += allocate(address,array_type);
+      address_pos = tmp_version;
+    }
     for(i = 0; i < inputs.size(); i++)
     {
-      out += store(type,get_res(inputs[i]),
-                   "getlementptr inbounds (" + array_type + "* " + address +
-                   ", i32 0, i32 " + to_string<unsigned long>(i) + ")");
+      out += get_unique_tmp() + " = getelementptr inbounds " + array_type + "* " + address + ", i64 0, i64 " + to_string<unsigned long>(i);
+      out += store(type,get_res(inputs[i]),get_current_tmp());
     }
     out += get_unique_res(type + "*") + " = getelementptr inbounds " + array_type + "* " + address
-        + ", i32 0, i32 0";
+        + ", i64 0, i64 0";
     return out;
   }
   
@@ -481,14 +484,14 @@
   {
     //%x = store [type] [value], [type]* [address]
     string out;
-    //emit value 
+    //emit value
     out += emitCode(nth(in,1));
     string type = latest_type();
     unsigned long version = res_version;
     //emit address
     out += emitCode(nth(in,2));
     if(cutlast(latest_type()) != type)
-      error(NormalError,"The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
+      error("The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
     out += store(type,get_res(version),get_current_res());
     return out;
   }
@@ -501,8 +504,37 @@
     string out = emitCode(nth(in,1));
     string type = latest_type();
     if(type[type.length()-1] != '*')
-      error(NormalError,"Address is not a pointer.");
+      error("Address is not a pointer.");
     out += load(get_unique_res(cutlast(type)),type,get_current_res());
+    return out;
+  }
+  
+  string pointer(Form* in)
+  {
+    string out = emitCode(nth(in,1));
+    return out + get_unique_res(latest_type()+"*") + " = " + get_current_tmp();
+  }
+  
+  string toplevel_asm(Form* in)
+  {
+    if(cdr(in) == NULL)
+      error("No Assembly code provided.",at(in));
+    return (string)"module asm \"" + cdr(in) + "\"\n";
+  }
+  
+  string inline_asm(Form* in)
+  {
+    string out;
+    string type = val(nth(in,1));
+    string dialect = val(nth(in,2));
+    string code = print(cdr(cdr(cdr(in))));
+    if(dialect != "Intel" && dialect != "ATT")
+      error("Unknown assembly dialect: Only 'Intel' and 'ATT' are supported, '"
+      ,dialect,"' was given.",at(in));
+    out = allocate(get_unique_tmp(),type);
+    out += get_unique_tmp() + " = call " + type + " asm "
+        + ((dialect == "Intel" ? "inteldailect" : "")) + " \"" + code + "\", ""()";
+    return out;
   }
   
   void init_stdlib()
@@ -510,19 +542,20 @@
     Scope new_scope;
     SymbolTable.push_back(new_scope);
     //Init Toplevel
-    TopLevel["def"]         = &def_global;
-    TopLevel["main"]        = &main_fn;
-    TopLevel["LLVM"]        = &embed_llvm;
-    TopLevel["function"]    = &define_function;
-    TopLevel["recursive"]   = &define_recursive;
-    TopLevel["fast"]        = &define_fast;
-    TopLevel["inline"]      = &define_inline;
+    TopLevel["def"]              = &def_global;
+    TopLevel["main"]             = &main_fn;
+    TopLevel["LLVM"]             = &embed_llvm;
+    TopLevel["function"]         = &define_function;
+    TopLevel["recursive"]        = &define_recursive;
+    TopLevel["fast"]             = &define_fast;
+    TopLevel["inline"]           = &define_inline;
     TopLevel["inline-recursive"] = &define_inline_recursive;
-    TopLevel["inline-fast"] = &define_inline_fast;
-    TopLevel["declare"]     = &declare;
-    TopLevel["type"]        = &makeType;
-    TopLevel["structure"]   = &makeStructure;
-    TopLevel["generic"]     = &genericInterface;
+    TopLevel["inline-fast"]      = &define_inline_fast;
+    TopLevel["declare"]          = &declare;
+    TopLevel["type"]             = &makeType;
+    TopLevel["structure"]        = &makeStructure;
+    TopLevel["generic"]          = &genericInterface;
+    TopLevel["ASM"]              = &toplevel_asm;
     //Init Core
     Core["def"]         = &def_local;
     Core["set"]         = &set;
@@ -552,6 +585,7 @@
     Core["allocate"]    = &mem_allocate;
     Core["store"]       = &mem_store;
     Core["load"]        = &mem_load;
+    Core["asm"]         = &inline_asm;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");
