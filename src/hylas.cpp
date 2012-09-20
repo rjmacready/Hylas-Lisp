@@ -3,7 +3,7 @@
 int main()
 {
   using namespace Hylas;
-  printf("Hylas Lisp 0.5, by Eudoxia\n");
+  printf("Hylas Lisp 0.6, by Eudoxia\n");
   init();
   setjmp(buf);
   /*cout << "Running tests:\n" << endl;

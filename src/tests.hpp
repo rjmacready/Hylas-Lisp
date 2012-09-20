@@ -156,7 +156,7 @@
       "10",
       "(add 10 20)",
       "(icmp eq 1 2)",
-      "(icmp leq 10 100)",
+      "(icmp ult 10 100)",
       //Testing function definition
       "(function test i64 ()\
         10)",
@@ -179,7 +179,9 @@
     for(unsigned long i = 0; tests[i] != "\0"; i++)
     {
       out += "Test #" + to_string(i+1) + ":\n> " + tests[i] + "\n\n";
-      out += emitCode(readString(tests[i])) + "\n\n";
+      out += Compile(readString(tests[i])) + "\n\n";
+      for(unsigned long j = 0; j < CodeStack.size(); j++)
+        cout << CodeStack[j];
       cout << out << endl;
       cin.get();
     }

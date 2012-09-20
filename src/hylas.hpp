@@ -12,6 +12,7 @@
 #include <string>
 #include <algorithm>
 #include <stdarg.h>
+#include <regex>
 
 /*#include "llvm/DerivedTypes.h"
  * #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -81,7 +82,6 @@ namespace Hylas
   string print(Form* in);
   unsigned char analyze(string in);
   void atomize(string atom);
-  string* lookup(string in);
   string type(string input);
   string code(string input);
   string emitCode(Form* form);
@@ -115,7 +115,7 @@ namespace Hylas
   {
     string sym;
     bool constant;
-    bool argument;
+    bool global;
   };
   
   typedef map<string,Variable> Scope;
@@ -126,13 +126,13 @@ namespace Hylas
   inline void error_unbound(Form* x)
   { error(x,"Symbol '",print(x),"' is unbound."); }
   
-  string* lookup(string in)
+  Variable* lookup(string in)
   {
     for(long i = ScopeDepth; i != -1; i--)
     {
       map<string,Variable>::iterator seeker = SymbolTable[i].find(in);
       if(seeker != SymbolTable[i].end())
-        return &seeker->second.sym;
+        return &seeker->second;
     }
     return NULL;
   }
@@ -143,24 +143,15 @@ namespace Hylas
   unsigned long string_version = -1;
   unsigned long array_version = -1;
   
-  string cutlast(string in)
-  {
-    return string(in,0,in.length()-1);
-  }
-  
   /*
    * TEMPORARY REGISTERS
    */
   
   inline string get_unique_tmp()
-  {
-    return "%tmp.version" + to_string(++tmp_version);
-  }
+  { return "%tmp.version" + to_string(++tmp_version); }
   
   inline string get_tmp(long long int v)
-  {
-    return "%tmp.version" + to_string(v);
-  }
+  { return "%tmp.version" + to_string(v); }
   
   inline string get_current_tmp(){ return get_tmp(tmp_version);}
   
@@ -176,16 +167,14 @@ namespace Hylas
   }
   
   inline string get_res(long v)
-  {
-    return "%res.version" + to_string(v);
-  }
+  { return "%res.version" + to_string(v); }
   
   string res_type(string name)
-  {
-    string* tmp = lookup(name);
+  { 
+    Variable* tmp = lookup(name);
     if(tmp == NULL)
     { printf("Can't find symbol."); Unwind(); }
-    return *tmp;
+    return tmp->sym;
   }
   
   inline string get_current_res(){ return get_res(res_version);}
@@ -195,25 +184,24 @@ namespace Hylas
    */
   
   string get_unique_label()
-  {
-    return "%label.version" + to_string(label_version++);
-  }
+  { return "%label.version" + to_string(label_version++); }
   
   string get_label(long long int v)
-  {
-    return "%label.version" + to_string(v);
-  }
+  { return "%label.version" + to_string(v); }
   
   inline string get_current_label(){ return get_label(label_version);}
   
-  #define allocate(address,type)                \
-  (string)address + " = alloca " + type + "\n"
-  #define store(type,value,address)             \
-  (string)"store " + type + " " + value + ", " + type + "* " + address + "\n"
-  #define load(to,type,source)                  \
-  (string)to + " = load " + type + "* " + source
+  inline string allocate(string address, string type)
+  { return address + " = alloca " + type + "\n"; }
   
-  #define latest_type()   res_type(get_current_res())
+  inline string store(string type, string value, string address)
+  { return "store " + type + " " + value + ", " + type + "* " + address + "\n"; }
+  
+  inline string load(string destination, string type, string source)
+  { return destination + " = load " + type + "* " + source; }
+  
+  inline string latest_type()
+  { return res_type(get_current_res()); }
   
   void dump_scope(unsigned long s)
   {
@@ -234,7 +222,6 @@ namespace Hylas
   #include "types.hpp"
   #include "fndef.hpp"
   #include "core.hpp"
-  #include "tests.hpp"
   #include "macros.hpp"
   
   string emitCode(Form* form)
@@ -267,43 +254,6 @@ namespace Hylas
           out += load(get_unique_res("i64"),"i64",get_current_tmp());
           break;
         }
-        case Real:
-        {
-          out = allocate(get_unique_tmp(),"double");
-          out += store("double",val(form),get_current_tmp());
-          out += load(get_unique_res("double"),"double",get_current_tmp());
-          break;
-        }
-        case Symbol:
-        {
-          /*map<string,string>::iterator seeker;
-          string sym = val(form);
-          string tmp;
-          string type;
-          for(long i = ScopeDepth; i != -1; i--)
-          {
-            seeker = SymbolTable[i].find(sym);
-            if(seeker != SymbolTable[i].end())
-            {
-              type = seeker->second;
-              tmp = sym + to_string<long>(i);
-              out = load(get_unique_res(type),type,"%"+tmp);
-            }
-          }
-          string* tmp = lookup(val(form));
-          if(tmp != NULL)
-            out = load(get_unique_res(val(form)),val(form),"%"+val(form));
-          else
-            error_unbound(val(form));
-          break;*/
-          string sym = val(form);
-          string* tmp = lookup(sym);
-          if(tmp == NULL)
-            error_unbound(form);
-          else
-            out = load(get_unique_res(*tmp),*tmp,"%"+sym+to_string(ScopeDepth));
-          break;
-        }
         case Character:
         {
           string c = string(val(form),1,val(form).length()-2);
@@ -313,6 +263,24 @@ namespace Hylas
           out += get_unique_tmp() + " = load i8* getelementptr inbounds ([2 x i8]* " + address + ", i32 0, i64 0)";
           out += store("i8",get_current_tmp(),get_tmp(tmp_version-1));
           out += load(get_unique_res("i8"),"i8",get_current_tmp());
+          break;
+        }
+        case Real:
+        {
+          out = allocate(get_unique_tmp(),"double");
+          out += store("double",val(form),get_current_tmp());
+          out += load(get_unique_res("double"),"double",get_current_tmp());
+          break;
+        }
+        case Symbol:
+        {
+          string sym = val(form);
+          Variable* tmp = lookup(sym);
+          if(tmp == NULL)
+            error_unbound(form);
+          else
+            out = load(get_unique_res(tmp->sym),tmp->sym,((tmp->global) ? "@" : "%")
+                + sym + to_string(ScopeDepth));
           break;
         }
         case String:
@@ -348,9 +316,7 @@ namespace Hylas
     if(form == NULL)
       error(form,"Can't emit code for the null form.");
     else if(isatom(form))
-    {
       out = emitCode(form);
-    }
     else
     {
       if(islist(car(form)))
@@ -363,13 +329,11 @@ namespace Hylas
         out += emitCode(readString("true"));
       }
       else
-      {
-        emitCode(form);
-      }
+        out = emitCode(form);
     }
     for(unsigned long i = 0; i < CodeStack.size(); i++)
       tmp += CodeStack[i] + "\n";
-    out = "define " + latest_type() + " @entry(){\n" + out + "\nret " + latest_type() + " " + get_current_res() + "\n}";
+    out = "define " + latest_type() + " @entry(){\n" + out + "ret " + latest_type() + " " + get_current_res() + "\n}";
     out = tmp + out;
     CodeStack.clear();
     return out;
@@ -410,5 +374,7 @@ namespace Hylas
    *      printf("The IR verifier found an unknown error.");
    *      Unwind();
    }
-   }*/  
+   }*/
+  
+  #include "tests.hpp"
 }

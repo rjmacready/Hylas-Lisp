@@ -3,20 +3,26 @@
   map<string,hFuncPtr> TopLevel;
   map<string,hFuncPtr> Core;
   
+  vector<string> allowedIntComparisons;
+  vector<string> allowedFloatComparisons;
+  
   string def_local(Form* form)
   {
     string varname = val(nth(form,1));
-    string* result = lookup(varname);
+    Variable* result = lookup(varname);
     if(result != NULL)
     {
       printf("ERROR: Symbol already defined.");
       Unwind();
     }
     string out = emitCode(nth(form,2));
-    out += allocate("%"+varname,latest_type());
-    out += store(latest_type(),get_current_res(),"%"+varname);
-    string str = latest_type();
-    SymbolTable[ScopeDepth][varname].sym = str;
+    string type = latest_type();
+    string fullname = "%"+varname;
+    out += allocate(fullname,latest_type());
+    out += store(type,get_current_res(),fullname);
+    SymbolTable[ScopeDepth][varname].sym = type;
+    SymbolTable[ScopeDepth][varname].constant = false;
+    SymbolTable[ScopeDepth][varname].global = false;
     return out;
   }
   
@@ -28,7 +34,7 @@
   string set(Form* form)
   {
     string varname = val(nth(form,1));
-    string* tmp = lookup(varname);
+    Variable* tmp = lookup(varname);
     if(tmp == NULL)
     {
       error_unbound(nth(form,1));
@@ -76,9 +82,17 @@
   {
     string out;
     string cmp_code = val(nth(form,1));
+    bool member;
+    for(unsigned long i = 0; i < allowedIntComparisons.size(); i++)
+    {
+      if(allowedIntComparisons[i] == cmp_code)
+      { member = true; break; }
+    }
+    if(!member)
+      error(form,"The integer comparison code'",cmp_code,"' does not exist.");
     out += emitCode(nth(form,2));
     out += emitCode(nth(form,3));
-    return out + get_unique_res(latest_type()) + " = icmp " + cmp_code + " "
+    return out + get_unique_res("i1") + " = icmp " + cmp_code + " "
     + latest_type() + " " + get_res(res_version-1) + ", " + get_res(res_version);
   }
   
@@ -86,9 +100,17 @@
   {
     string out;
     string cmp_code = val(nth(form,1));
+    bool member;
+    for(unsigned long i = 0; i < allowedFloatComparisons.size(); i++)
+    {
+      if(allowedFloatComparisons[i] == cmp_code)
+      { member = true; break; }
+    }
+    if(!member)
+      error(form,"The integer comparison code'",cmp_code,"' does not exist.");
     out += emitCode(nth(form,2));
     out += emitCode(nth(form,3));
-    return out + get_unique_res(latest_type()) + " = fcmp " + cmp_code + " "
+    return out + get_unique_res("i1") + " = fcmp " + cmp_code + " "
     + latest_type() + " " + get_res(res_version-1) + ", " + get_res(res_version);
   }
   
@@ -422,7 +444,7 @@
       if(!type.empty())
         if(latest_type() != type)
           error(form,"When building an array, the types of all the elements must match.",
-                "The first type mismatch occured at '",nth(form,i),"'.");
+                " The first type mismatch occured at '",nth(form,i),"'.");
       inputs.push_back(res_version);
       type = latest_type();
     }
@@ -439,7 +461,7 @@
     }
     for(i = 0; i < inputs.size(); i++)
     {
-      out += get_unique_tmp() + " = getelementptr inbounds " + array_type + "* " + address + ", i64 0, i64 " + to_string<unsigned long>(i);
+      out += get_unique_tmp() + " = getelementptr inbounds " + array_type + "* " + address + ", i64 0, i64 " + to_string<unsigned long>(i) + "\n";
       out += store(type,get_res(inputs[i]),get_current_tmp());
     }
     out += get_unique_res(type + "*") + " = getelementptr inbounds " + array_type + "* " + address
@@ -592,4 +614,10 @@
     addWordMacro("short","i16");
     addWordMacro("int","i32");
     addWordMacro("long","i64");
+    //Allowed comparisons for numerical operations
+    allowedIntComparisons = {"eq", "ne", "ugt", "uge", "ult", "ule", "sgt"
+                             "sge", "slt", "sle"};
+    allowedFloatComparisons = {"false", "oeq", "ogt", "oge", "olt", "ole", "one",
+                               "ord", "ueq", "ugt", "uge", "ult", "ule", "une",
+                               "uno", "true"};
   }

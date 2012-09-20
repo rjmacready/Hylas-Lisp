@@ -245,6 +245,8 @@
               string type = printTypeSignature(nth(current_arg,1));
               fn_args[argname] = type;
               SymbolTable[ScopeDepth][argname].sym = type;
+              SymbolTable[ScopeDepth][argname].constant = false;
+              SymbolTable[ScopeDepth][argname].global = false;
             }
           }
         }
@@ -275,12 +277,17 @@
       }
       seeker->second.versions.push_back(newfn);
       string arg_code;
+      string arg_name, base_name;
       for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
       {
-        arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ",";
+        arg_name = "%" + i->first+to_string(ScopeDepth);
+        base_name = arg_name + "_base";
+        arg_code += i->second + " " + base_name + ",";
+        tmp_code += allocate(arg_name,i->second);
+        tmp_code += store(i->second,base_name,arg_name);
       }
       tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + to_string(seeker->second.versions.size()-1)
-      + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code)) + "){\n";
+      + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code)) + ") {\n" + tmp_code;
     }
     else
     {
@@ -288,13 +295,17 @@
       new_metafn.versions.push_back(newfn);
       FunctionTable[fn_name] = new_metafn;
       string arg_code;
-      //print(fn_args);
+      string arg_name, base_name;
       for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
       {
-        arg_code += i->second + " %" + i->first+to_string(ScopeDepth) + ", ";
+        arg_name = "%" + i->first+to_string(ScopeDepth);
+        base_name = arg_name + "_base";
+        arg_code += i->second + " " + base_name + ",";
+        tmp_code += allocate(arg_name,i->second);
+        tmp_code += store(i->second,base_name,arg_name);
       }
-      tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + "0" + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code))
-      + "){\n";
+      tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + "0" + "(" + ((length(args) == 1) ? cutlast(arg_code) : cutlast(arg_code))
+      + ") {\n" + tmp_code;
     }
     //Compile the code
     for(unsigned long i = body_starting_pos; i < length(form);i++)
@@ -366,13 +377,13 @@
             callcode += get_unique_res(seeker->second.versions[i].ret_type);
             callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
             callcode += seeker->second.versions[i].fastcc ? "fastcc " : "ccc ";
-            callcode += seeker->second.versions[i].ret_type + " @" + func + to_string(i) + (arguments.empty() ? "" :"(");
+            callcode += seeker->second.versions[i].ret_type + " @" + func + to_string(i) + (arguments.empty() ? "()" :"(");
             for(arg_iterator = seeker->second.versions[i].arguments.begin();
                 arg_iterator != seeker->second.versions[i].arguments.end();
             arg_iterator++)
             {
               callcode += arg_iterator->second + " ";
-              callcode += get_res(res_nums[0]) + ", ";
+              callcode += get_res(res_nums[0]) + ",";
               res_nums.erase(res_nums.begin());
             }
             callcode = (arguments.empty() ? callcode : (cutlast(callcode) + ")"));

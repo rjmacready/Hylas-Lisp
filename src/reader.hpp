@@ -302,10 +302,28 @@ whose length is %li.",location,print(in).c_str(),length(in));
   #define String	        6
   #define Unidentifiable        7
   
+  /*unsigned char analyze2(string input)
+  {
+    if(input == "true")
+      return BooleanTrue;
+    else if(input == "false")
+      return BooleanFalse;
+    else if(regex_match(input,regex("[-+]?\d+")))
+      return Integer;
+    else if(regex_match(input,regex("\'[a-zA-Z0-9]\'")))
+      return Character;
+    else if(regex_match(input,regex("[-+]?\d\+\.?([eE][+-]?)?\d+")))
+      return Real;
+    else if(regex_match(input,regex("[.]+")))
+      return Symbol;
+    else if(regex_match(input,regex("\"[.\n\r]*\"")))
+      return String;
+    else
+      return Unidentifiable;
+  }*/
+  
   unsigned char analyze(string input)
   {
-    if(input.length() < 1)
-      Unwind();
     bool doubleQuoteFound               = false;
       unsigned long doubleQuotePosition	= 0;
     bool singleQuoteFound               = false;

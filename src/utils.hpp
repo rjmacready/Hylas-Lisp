@@ -21,3 +21,8 @@
     out += input + (string)"'\n";
     return out + "(Line " + to_string(input->line) + ", column " + to_string(input->column) + ")";
   }
+  
+  string cutlast(string in)
+  {
+    return string(in,0,in.length()-1);
+  }
