@@ -147,10 +147,12 @@ namespace Hylas
    * TEMPORARY REGISTERS
    */
   
+  inline string gensym() { return "%uniqueness_guaranteed_" + to_string<int>(rand()); }
+  
   inline string get_unique_tmp()
   { return "%tmp.version" + to_string(++tmp_version); }
   
-  inline string get_tmp(long long int v)
+  inline string get_tmp(long v)
   { return "%tmp.version" + to_string(v); }
   
   inline string get_current_tmp(){ return get_tmp(tmp_version);}
@@ -184,12 +186,21 @@ namespace Hylas
    */
   
   string get_unique_label()
-  { return "%label.version" + to_string(label_version++); }
+  { return "%label.version" + to_string(++label_version); }
   
-  string get_label(long long int v)
+  string get_label(long v)
   { return "%label.version" + to_string(v); }
   
   inline string get_current_label(){ return get_label(label_version);}
+  
+  inline string functional_label(string in)
+  {
+    return cutfirst(in) + ":\n";
+  }
+  
+  /*
+   * REGISTERS
+   */
   
   inline string allocate(string address, string type)
   { return address + " = alloca " + type + "\n"; }
@@ -336,6 +347,9 @@ namespace Hylas
     out = "define " + latest_type() + " @entry(){\n" + out + "ret " + latest_type() + " " + get_current_res() + "\n}";
     out = tmp + out;
     CodeStack.clear();
+    tmp_version = -1;
+    res_version = -1;
+    label_version = -1;
     return out;
   }
   

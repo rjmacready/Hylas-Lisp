@@ -169,11 +169,21 @@
       "(test)",
       "(test 2 3)",
       "(test2)",
-      /*"(recursive fib i64 ((n i64))\
-        (flow (icmp ult 2 n)\
+      "(recursive herp i64 ((n i64))\
+        (sub n 1))",
+      "(if (icmp ult 1 2)\
+        true\
+        false)",
+      "(function sg bool ((n long))\
+        (flow (icmp ugt n 0)\
+          true\
+          false))",
+      "(function fib i64 ((n i64))\
+        (flow (icmp slt n 2)\
           n\
-            (add (fib (sub n 1))\
-                 (fib (sub n 2)))))",*/
+          (add (fib (sub n 1))\
+               (fib (sub n 2)))))",
+      "(fib 30)",
       "\0"
     };
     for(unsigned long i = 0; tests[i] != "\0"; i++)

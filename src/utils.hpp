@@ -23,6 +23,7 @@
   }
   
   string cutlast(string in)
-  {
-    return string(in,0,in.length()-1);
-  }
+  { return string(in,0,in.length()-1); }
+  
+  string cutfirst(string in)
+  { return string(in,1); }

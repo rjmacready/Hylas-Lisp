@@ -60,9 +60,14 @@
   string generic_math(Form* form, string opcode)
   {
     string out = emitCode(nth(form,1));
+    unsigned long address = res_version;
     out += emitCode(nth(form,2));
+    if(latest_type() != res_type(get_res(address)))
+      error(form,"Basic mathematical operations require boths operands to be of\
+the same type. Here, the first operand was of type '",res_type(get_res(address)),\
+"', while the second was of type '",latest_type(),"'.");       
     return out + get_unique_res(latest_type()) + " = " + opcode + " " + latest_type()
-    + " " + get_res(tmp_version - 1) + ", " + get_res(tmp_version);
+    + " " + get_res(address) + ", " + get_current_res();
   }
   
   string add(Form* form)                {return generic_math(form,"add");}
@@ -178,44 +183,57 @@
   string simple_if(Form* form)
   {
     string out = emitCode(nth(form,1));
+    out += allocate(get_unique_tmp(),"i1");
+    unsigned long address = tmp_version;
     if(latest_type() != "i1")
-    {
-      out += "\nbr i1 true,";
-    }
+      error(form,"The test (Second argument) of an (if) form must evaluate to a boolean (i1) value.");
     else
-      out += "\nbr i1 " + get_current_res() + ",";
-    out += " label " + get_unique_label() + ", label " + get_unique_label();
-    out += string(get_label(label_version - 1),1) + "\n";
+      out += "br i1 " + get_current_res() + ",";
+    out += " label " + get_unique_label();
+    out += ", label " + get_unique_label() + "\n";
+    out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,2));
-    out += "br " + get_label(label_version+1) + "\n";
-    out += string(get_label(label_version - 2),1) + "\n";
+    out += store("i1","true",get_tmp(address));
+    out += "br label " + get_label(label_version+1) + "\n";
+    out += functional_label(get_label(label_version));
     out += emitCode(nth(form,3));
-    out += get_unique_label();
-    out += get_unique_res(latest_type()) + " = phi " + latest_type() + " [true, " + get_label(label_version - 2) + "], [false, " + get_label(label_version - 3) + "]";
+    out += store("i1","false",get_tmp(address));
+    out += "br label " + get_label(label_version+1) + "\n";
+    out += functional_label(get_unique_label());
+    out += load(get_unique_res("i1"),"i1",get_tmp(address));
     return out;
   }
   
   string flow(Form* form)
   {
     string out = emitCode(nth(form,1));
+    string true_branch_type, false_branch_type;
+    string address = gensym();
+    string tmp;
     if(latest_type() != "i1")
-    {
-      out += "br i1 true,";
-    }
+      error(form,"The test (Second argument) of a (flow) form must evaluate to a boolean (i1) value.");
     else
-    {
       out += "br i1 " + get_current_res() + ",";
-    }
-    out += " label " + get_unique_label() + ", label " + get_unique_label() + "\n";
-    out += string(get_label(label_version - 1),1) + "\n";
+    out += " label " + get_unique_label() + ", label ";
+    out += get_unique_label() + "\n";
+    out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,2));
-    unsigned long save = res_version;
-    out += "br " + get_label(label_version+1) + "\n";
-    out += string(get_label(label_version - 2),1) + "\n";
+    true_branch_type = latest_type();
+    out += store(true_branch_type,get_current_res(),address);
+    out += "br label " + get_unique_label() + "\n";
+    out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,3));
-    out += get_unique_label();
-    out += get_unique_res(latest_type()) + " = phi " + latest_type() + " [" + get_res(save) + ", " + get_label(label_version - 1) + "], [" + get_res(res_version - 2) + ", " + get_label(label_version - 3) + "]";
-    return out;
+    false_branch_type = latest_type();
+    out += store(true_branch_type,get_current_res(),address);
+    out += "br label " + get_label(label_version) + "\n";
+    out += functional_label(get_label(label_version));
+    if(true_branch_type != false_branch_type)
+      error(form,"Both branches of a (flow) statement must evaluate to the same type. Here, the true branch returns a '",
+            true_branch_type,"', while the false branch returns a '",false_branch_type,"'.");
+    else
+    tmp = allocate(address,true_branch_type);
+    out += load(get_unique_res(true_branch_type),true_branch_type,address);
+    return tmp+out;
   }
   
   string begin(Form* form)
@@ -234,14 +252,15 @@
     return out + "\n}";
   }
   
-  string declare(Form* form)
+  string foreign(Form* form)
   {
     string out = "declare " + val(nth(form,2)) + " @" + val(nth(form,1)) + "(";
     for(unsigned int i = 3; i <= length(form)-1; i++)
     {
       out += val(nth(form,i)) + ", ";
     }
-    return cutlast(out) + ")\n";		
+    out = cutlast(out) + ")\n";
+    //...
   }
   
   string embed_llvm(Form* form)
@@ -573,18 +592,18 @@
     TopLevel["inline"]           = &define_inline;
     TopLevel["inline-recursive"] = &define_inline_recursive;
     TopLevel["inline-fast"]      = &define_inline_fast;
-    TopLevel["declare"]          = &declare;
+    TopLevel["foreign"]          = &foreign;
     TopLevel["type"]             = &makeType;
     TopLevel["structure"]        = &makeStructure;
     TopLevel["generic"]          = &genericInterface;
-    TopLevel["ASM"]              = &toplevel_asm;
+    TopLevel["asm"]              = &toplevel_asm;
     //Init Core
     Core["def"]         = &def_local;
     Core["set"]         = &set;
     Core["ret"]         = &ret;
     Core["add"]         = &add;
     Core["fadd"]        = &fadd;
-    Core["sub"]         = &fsub;
+    Core["sub"]         = &sub;
     Core["fsub"]        = &fsub;
     Core["mul"]         = &mul;
     Core["fmul"]        = &fmul;
