@@ -134,8 +134,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
     return car(node);
   }
   
-  long curline = 0;
-  int curcolumn = 0;
+  unsigned long curline = 0;
+  unsigned int curcolumn = 0;
 
   inline Form* makeForm(string in, bool tag)
   { Form* self = new Form; tag(self) = tag; val(self) = in;
@@ -178,6 +178,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
         {
           if(tmp == '-' && ch == '!')
             { ch = next_char(in); break; }
+          if(tmp == '\n')
+            curcolumn = 0;
           tmp = ch;
           ch = next_char(in);
         }
@@ -192,38 +194,39 @@ whose length is %li.",location,print(in).c_str(),length(in));
     if(ch == '"')
     {
       char text[10000];
-      int index = 0;
+      text[0] = '"';
+      int index = 1;
       ch = next_char(in);
       while(true)
       {
         if(ch == '"' && tmp != '\\')
           break;
+        if(tmp == '\n')
+          curcolumn = 0;
         text[index++] = ch;
         tmp = ch;
         ch = next_char(in);
       }
+      text[index++] = '"';
       text[index++] = '\0';
-      return getMacro(text);
+      return string(text);
     }
-    else
+    char text[300];
+    int index = 0;
+    while(!isspace(ch) && ch != ')' && ch != '(')
     {
-      char buffer[300];
-      int index = 0;
-      while(!isspace(ch) && ch != ')' && ch != '(')
-      {
-        buffer[index++] = ch;
-        ch = next_char(in);
-      }
-      buffer[index++] = '\0';
-      if(ch == ')' || ch == '(') 
-        unget_char(ch, in);
-      return tryPrefixOrPostfix(getMacro(buffer));
+      text[index++] = ch;
+      ch = next_char(in);
     }
+    text[index++] = '\0';
+    if(ch == ')' || ch == '(') 
+      unget_char(ch, in);
+    return text;
   }
   
   Form* read_tail(FILE *in)
   {
-    string token = next_token(in);
+    string token = tryPrefixOrPostfix(getMacro(next_token(in)));
     if(token == ")")
     {
       return NULL;
@@ -251,7 +254,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
     if(token == ")")
       return NULL;
     Form* result = makeForm(token,Atom);
-    clear_reader();
     reseterror();
     return result;
   }
@@ -262,7 +264,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
     FILE* ptr = fopen(filename.c_str(),"r");
     Form* tmp = read(ptr);
     fclose(ptr);
-    clear_reader();
     reseterror();
     return tmp;
   }
@@ -274,7 +275,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
     fputs(in.c_str(),ptr);
     fputs("\n",ptr);
     fclose(ptr);
-    clear_reader();
     reseterror();
     return readFile("reader.tmp");
   }
@@ -323,6 +323,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
       return BooleanTrue;
     else if(input == "false")
       return BooleanFalse;
+    if(regex_match (s,e))
+      cout << "string object matched\n";
     else if(regex_match(input,regex("[-+]?\d+")))
       return Integer;
     else if(regex_match(input,regex("\'[a-zA-Z0-9]\'")))
@@ -340,9 +342,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
   unsigned char analyze(string input)
   {
     bool doubleQuoteFound               = false;
-      unsigned long doubleQuotePosition	= 0;
     bool singleQuoteFound               = false;
-      unsigned long singleQuotePosition = 0;
     bool minusSignFound	                = false;
       unsigned long minusSignPosition	= 0;
       unsigned long numberOfMinusSigns	= 0;
@@ -361,7 +361,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
         if(!doubleQuoteFound)
         {
           doubleQuoteFound = true;
-          doubleQuotePosition = i;
         }
       }
       if(input[i] == '\'')
@@ -369,7 +368,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
         if(!singleQuoteFound)
         {
           singleQuoteFound = true;
-          singleQuotePosition = i;
         }
       }
       else if(input[i] == '-')
@@ -410,19 +408,13 @@ whose length is %li.",location,print(in).c_str(),length(in));
     }
     if(doubleQuoteFound)
     {
-      if(doubleQuotePosition == 0)
-      {
-        if(input[input.length()-1] == '"')
-          return String;
-      }
+      if(input[input.length()-1] == '"' && input[0] == '"')
+        return String;
     }
     if(singleQuoteFound)
     {
-      if(singleQuotePosition == 0)
-      {
-        if(input[input.length()-1] == '\'')
-          return Character;
-      }
+      if(input[input.length()-1] == '\'')
+        return Character;
     }
     if(numericalFound)
     {

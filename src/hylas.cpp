@@ -5,9 +5,9 @@ int main()
   using namespace Hylas;
   printf("Hylas Lisp 0.6, by Eudoxia\n");
   init();
+  /*cout << "Running tests:\n" << endl;
+  runTests();*/
   setjmp(buf);
-  cout << "Running tests:\n" << endl;
-  runTests();
   while(true)
   {
     printf("\n>");

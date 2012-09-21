@@ -575,5 +575,5 @@
   
   void init_types()
   {
-    CoreTypes = {"half", "float", "double", "x86_fp80", "fp128", "ppc_fp128" };
+    CoreTypes = {"half", "float", "double", "x86_fp80", "fp128", "ppc_fp128", "..." };
   }

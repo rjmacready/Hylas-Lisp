@@ -195,4 +195,5 @@
       cout << out << endl;
       cin.get();
     }
+    testmode = false;
   }

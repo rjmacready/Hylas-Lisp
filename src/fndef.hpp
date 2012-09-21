@@ -66,8 +66,6 @@
   
   enum fnType {Function, Fast, Recursive};
   
-  #define args (nth(form,args_pos))
-  
   const unsigned int name_pos = 1;
   const unsigned int ret_type_pos = 2;
   const unsigned int args_pos = 3;
@@ -87,8 +85,8 @@
       error(form,"Can't use a list as a function name.");
     else if(analyze(val(nth(form,name_pos))) != Symbol)
       error(form,"form,Can't use a non-symbolic atom as a function name.");
-    if(args != NULL)
-      if(tag(args) != List)
+    if(nth(form,args_pos) != NULL)
+      if(tag(nth(form,args_pos)) != List)
         error(form,"The argument list must be a list.");
   }
   
@@ -219,12 +217,11 @@
     map<string,string> fn_args;
     newfn.fn_ptr_type = newfn.ret_type + "(";
     Form* current_arg;
-    if(args != NULL)
+    if(nth(form,args_pos) != NULL)
     {
-      for(unsigned long i = 0; i < length(args); i++)
+      for(unsigned long i = 0; i < length(nth(form,args_pos)); i++)
       {
-        current_arg = nth(args,i);
-        //printf("\nAnalyzing:%s",print(current_arg).c_str());
+        current_arg = nth(nth(form,args_pos),i);
         if(tag(current_arg) == List)
         {
           if(tag(nth(current_arg,0)) != Atom)
@@ -253,6 +250,8 @@
         }
         else
         { 
+          if(val(current_arg) == "...")
+            fn_args[gensym()] = "...";
           //Handle Dynamic args
         }
       }
@@ -291,17 +290,27 @@
     string arg_name, base_name, arg_code, out;
     for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
     {
-      arg_name = "%" + i->first+to_string(ScopeDepth);
-      base_name = arg_name + "_base";
-      arg_code += i->second + " " + base_name + ",";
-      tmp_code += allocate(arg_name,i->second);
-      tmp_code += store(i->second,base_name,arg_name);
+      if(i->second == "...")
+      {
+        cout << "HWREP DERP VARARGS" << endl;
+        arg_code += "...,";
+        if(i == fn_args.end()--)
+          error(form,"The varargs argument (...) must be last in an argument list.");
+      }
+      else
+      {
+        arg_name = "%" + i->first+to_string(ScopeDepth);
+        base_name = arg_name + "_base";
+        arg_code += i->second + " " + base_name + ",";
+        tmp_code += allocate(arg_name,i->second);
+        tmp_code += store(i->second,base_name,arg_name);
+      }
       //Put the type in the fn pointer
       newfn.fn_ptr_type += i->second + ",";
     }
     string processed_name = "@" + fn_name + ((seeker != FunctionTable.end()) ? to_string(seeker->second.versions.size()-1) : "0");
-    tmp_code = (string)"define " + newfn.ret_type + " " + processed_name;
-    tmp_code += "(" + ((length(args) == 1) ? cutlast(arg_code) : cutlast(arg_code)) + ") {\n";
+    tmp_code = (string)"define " + (newfn.fastcc? "fastcc ":"ccc ") + newfn.ret_type + " " + processed_name
+        + "(" + ((length(nth(form,args_pos)) == 1) ? cutlast(arg_code) : cutlast(arg_code)) + ")\n{\n" + tmp_code;
     //Compile the code
     for(unsigned long i = body_starting_pos; i < length(form);i++)
     {
@@ -310,7 +319,7 @@
     fn_code = tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}";;
     push(fn_code);
     //Create a pointer to the function
-    newfn.fn_ptr_type = ((args == NULL)?newfn.fn_ptr_type:cutlast(newfn.fn_ptr_type)) + ")*";
+    newfn.fn_ptr_type = ((nth(form,args_pos) == NULL)?newfn.fn_ptr_type:cutlast(newfn.fn_ptr_type)) + ")*";
     out += allocate(get_unique_tmp(),newfn.fn_ptr_type);
     out += store(newfn.fn_ptr_type,processed_name,get_current_tmp());
     out += load(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,get_current_tmp());
@@ -375,7 +384,7 @@
           //Found a matching function
           callcode += get_unique_res(seeker->second.versions[i].ret_type);
           callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
-          callcode += seeker->second.versions[i].fastcc ? "fastcc " : "ccc ";
+          callcode += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
           callcode += seeker->second.versions[i].ret_type;
           //Clean the function pointer type to remove the return type
           string clean_fn_ptr = seeker->second.versions[i].fn_ptr_type;

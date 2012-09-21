@@ -15,7 +15,7 @@
 #include <stdarg.h>
 #include <regex>
 
-#include "llvm/DerivedTypes.h"
+/*#include "llvm/DerivedTypes.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/LLVMContext.h"
@@ -30,19 +30,19 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/ADT/Twine.h"
-#include "llvm/Assembly/Parser.h"
+#include "llvm/Assembly/Parser.h"*/
 
 
 namespace Hylas
 {
   using namespace std;
-  using namespace llvm;
+  //using namespace llvm;
   
-  Module* Program;
+  /*Module* Program;
   LLVMContext& Context = getGlobalContext();
   IRBuilder<> Builder(Context);
   FunctionPassManager FPM(Program);
-  ExecutionEngine* Engine;
+  ExecutionEngine* Engine;*/
   
   #define List  false
   #define Atom  true
@@ -98,10 +98,13 @@ namespace Hylas
   
   struct Compiler
   {
-        bool allow_RedefineMacros;
-        bool allow_RedefineFunctions;
-        bool allow_RedefinePrePostfixes;
-        bool output;
+    //General Behaviour options
+    bool allow_RedefineMacros;
+    bool allow_RedefineFunctions;
+    bool allow_RedefineWordMacros;
+    bool allow_RedefinePrePostfixes;
+    //Should the output be HTML or plain text? (For pretty frontends)
+    bool output;
   };
   
   Compiler master;
@@ -298,8 +301,8 @@ namespace Hylas
         }
         case String:
         {
-          //Remember strings come without their double quotes
-          string str = val(form);
+          //Remember strings come with their double quotes
+          string str = cutboth(val(form));
           long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";
           push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + str + "\\0A\\00\"");
@@ -352,40 +355,43 @@ namespace Hylas
     tmp_version = -1;
     res_version = -1;
     label_version = -1;
+    clear_reader();
     return out;
   }
   
   void init_optimizer()
   {
-    FPM.add(createBasicAliasAnalysisPass());
+    /*FPM.add(createBasicAliasAnalysisPass());
     FPM.add(createInstructionCombiningPass());
     FPM.add(createReassociatePass());
     FPM.add(createGVNPass());
     FPM.add(createCFGSimplificationPass());
-    FPM.doInitialization();
+    FPM.doInitialization();*/
   }
   
   void init()
   {
-    InitializeNativeTarget();
-    Program = new Module("Hylas Lisp",Context);*/
+    //InitializeNativeTarget();
+    //Program = new Module("Hylas Lisp",Context);
     master.allow_RedefineMacros = true;
+    master.allow_RedefineWordMacros = true;
+    master.allow_RedefinePrePostfixes = true;
     master.allow_RedefineFunctions = false;
     master.output = plain;
     init_stdlib();
     init_types();
     init_optimizer();
-    Engine =  EngineBuilder(Program).create();
+    //Engine =  EngineBuilder(Program).create();
   }
   
   void compileIR(string in)
   {
-    SMDiagnostic errors;
+    /*SMDiagnostic errors;
     ParseAssemblyString(in.c_str(),Program,errors,Context);
     if(!errors.getMessage().empty())
       printf("\n%s",errors.getMessage().c_str());
     if(verifyModule(*Program))
-      nerror("The IR verifier found an unknown error.");
+      nerror("The IR verifier found an unknown error.");*/
   }
   
   #include "tests.hpp"

@@ -16,7 +16,7 @@
     string type = latest_type();
     string fullname = (tmp->global?"@":"%")+varname;
     if(tmp->global)
-      push(fullname + " = global " + type + " zeroinitializer";
+      push(fullname + " = global " + type + " zeroinitializer");
     else
       out += allocate(fullname,latest_type());
     out += store(type,get_current_res(),fullname);
@@ -271,24 +271,25 @@
   string foreign(Form* form)
   {
     string name = val(nth(form,1));
-    string ret_type = val(nth(form,2));
+    string ret_type = printTypeSignature((nth(form,2)));
     string args = "(";
     string call_args;
     string out = "declare " + ret_type + " @" + name + "(";
-    for(unsigned int i = 3; i <= length(form)-1; i++)
+    for(unsigned long i = 3; i <= length(form)-1; i++)
     {
-      string type = val(nth(form,i));
-      out += type + ", ";
-      args += "(arg." + to_string(i) + " " + type + ")";
-      call_args += " " + type;
+      out += printTypeSignature(nth(form,i)) + ",";
+      args += "(arg." + to_string(i) + " " + print(nth(form,i)) + ")";
+      call_args += " arg." + to_string(i);
     }
     out = cutlast(out) + ")\n";
     push(out);
-    args += ")";
+    args += (string)")";
     out =
-      "(function " + name + " " + ret_type + " " + args
-      + "(call " + name + " " + ret_type + call_args + "))";
-    return emitCode(out);
+      "(inline " + name + " " + ret_type + " " + args
+      + "(call " + name + " " + ret_type + " ccc " + call_args + "))";
+    cout << out << endl;
+    Form* code = readString(out);
+    return emitCode(code);
   }
   
   string embed_llvm(Form* form)
@@ -323,13 +324,13 @@
     string c_conv = val(nth(form,3));
     string fn_ptr_type = "(";
     map<long,string> inputs;
-    for(unsigned long i = 0; i < length(form); i++)
+    for(unsigned long i = 4; i < length(form); i++)
     {
       out += emitCode(nth(form,i));
       inputs[res_version] = latest_type();
       fn_ptr_type += latest_type() + ",";
     }
-    out += (string)"call " + ret_type + " " + c_conv + " " + cutlast(fn_ptr_type) + "* @" + name + "(";
+    out += "call " + c_conv + " " + ret_type + " " + cutlast(fn_ptr_type) + ")* @" + name + "(";
     for(map<long,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
     {
       out += seeker->second + " " + get_res(seeker->first) + ",";
@@ -580,6 +581,26 @@
   
   string word(Form* in)
   {
+    if(length(in) < 3)
+      error(in,"(word) takes at least three arguments: An atom to be replaced and code to replace it with.");
+    else if(islist(nth(in,1)))
+      error(in,"The first argument to (word) must be a symbolic atom.");
+    else if(analyze(val(nth(in,1))) != Symbol)
+      error(in,"The first argument to (word) must be a symbolic atom.");
+    string word = val(nth(in,1));
+    if(islist(nth(in,2)))
+      error(in,"The second argument to (word) must be a string.");
+    else if(analyze(val(nth(in,2))) != String)
+      error(in,"The second argument to (word) must be a string.");
+    map<string,string>::iterator checker = WordMacros.find(word);
+    if(checker != WordMacros.end())
+    {
+      if(master.allow_RedefineWordMacros)
+        warn(in,"Redefining word macro '",word,"'.");
+      else
+        error(in,"A word macro with that name ('",word,"') has already been defined.");
+    }
+    WordMacros[word] = cutboth(val(nth(in,2)));
     return "";
   }
     
@@ -596,14 +617,17 @@
     char name = val(nth(in,1))[0];
     if(islist(nth(in,2)))
       error(in,"The second argument to ",(pre?"(prefix)":"(postfix)")," must be a string.");
-    else if(analyze(val(nth(in,1))) != String)
+    else if(analyze(val(nth(in,2))) != String)
       error(in,"The second argument to ",(pre?"(prefix)":"(postfix)")," must be a string.");
-    string code = val(nth(in,2));
+    string code = cutboth(val(nth(in,2)));
     map<char,string>::iterator checker = (pre?Prefixes:Postfixes).find(name);
-    if(checker != (pre?Prefixes:Postfixes).end() && master.allow_RedefinePrePostfixes)
-      warn(in,"Redefining ",(pre?"prefix":"postfix")," '",name,"'.");
-    else
-      error(in,"A ",(pre?"prefix":"postfix")," with that name ('",name,"' has already been defined.");
+    if(checker != (pre?Prefixes:Postfixes).end())
+    {
+      if(master.allow_RedefinePrePostfixes)
+        warn(in,"Redefining ",(pre?"prefix":"postfix")," '",name,"'.");
+      else
+        error(in,"A ",(pre?"prefix":"postfix")," with that name ('",name,"' has already been defined.");
+    }
     if(pre)
       Prefixes[name] = code;
     else
@@ -620,7 +644,7 @@
   string import(Form* in)
   {
     string filepath = cutfirst(cutlast(print(cdr(in))));
-    if(filepath.find(".hylas") == string::npos &&)
+    if(filepath.find(".hylas") == string::npos)
       filepath = filepath + ".hylas";
     return "";
   }

@@ -22,8 +22,11 @@
     return out + "(Line " + to_string(input->line) + ", column " + to_string(input->column) + ")";
   }
   
-  string cutlast(string in)
+  inline string cutlast(string in)
   { return string(in,0,in.length()-1); }
   
-  string cutfirst(string in)
+  inline string cutfirst(string in)
   { return string(in,1); }
+  
+  inline string cutboth(string in)
+  { return cutfirst(cutlast(in)); }
