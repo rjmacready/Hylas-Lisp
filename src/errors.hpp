@@ -73,3 +73,48 @@
       cout << "</div>";
     Unwind();
   }
+  
+  template<typename... T>
+  void nerror(T const& ... text)
+  {
+    switch(errormode)
+    {
+      case NormalError:
+        if(master.output == HTML)
+          cout << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
+        else
+          cout << "Normal Error: ";
+        break;
+      case ReaderError:
+        if(master.output == HTML)
+          cout << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
+        else
+          cout << "Reader Error: ";
+        break;
+      case GenericError:
+        if(master.output == HTML)
+          cout << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
+        else
+          cout << "Error during Generic Expansion: ";
+        break;
+      case MacroError:
+        if(master.output == HTML)
+          cout << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
+        else
+          cout << "Error during Macro Expansion: ";
+        break;        
+    }
+    error_print(text...);
+    if(master.output == HTML)
+      cout << "</div>";
+    Unwind();
+  }
+  
+  template<typename... T>
+  void warn(Form* head, T const& ... text)
+  {    
+    error_print(text...);
+    cout << at(head);
+    if(master.output == HTML)
+      cout << "</div>";
+  }

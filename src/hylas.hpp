@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <csetjmp>
+#include <climits>
 #include <map>
 #include <vector>
 #include <string>
@@ -14,34 +15,34 @@
 #include <stdarg.h>
 #include <regex>
 
-/*#include "llvm/DerivedTypes.h"
- * #include "llvm/ExecutionEngine/ExecutionEngine.h"
- * #include "llvm/ExecutionEngine/JIT.h"
- * #include "llvm/LLVMContext.h"
- * #include "llvm/Module.h"
- * #include "llvm/PassManager.h"
- * #include "llvm/Analysis/Verifier.h"
- * #include "llvm/Analysis/Passes.h"
- * #include "llvm/Target/TargetData.h"
- * #include "llvm/Transforms/Scalar.h"
- * #include "llvm/Support/IRBuilder.h"
- * #include "llvm/Support/TargetSelect.h"
- * #include "llvm/Support/raw_ostream.h"
- * #include "llvm/Support/SourceMgr.h"
- * #include "llvm/ADT/Twine.h"
- * #include "llvm/Assembly/Parser.h"*/
+#include "llvm/DerivedTypes.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/JIT.h"
+#include "llvm/LLVMContext.h"
+#include "llvm/Module.h"
+#include "llvm/PassManager.h"
+#include "llvm/Analysis/Verifier.h"
+#include "llvm/Analysis/Passes.h"
+#include "llvm/Target/TargetData.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Support/IRBuilder.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Assembly/Parser.h"
 
 
 namespace Hylas
 {
   using namespace std;
-  //using namespace llvm;
+  using namespace llvm;
   
-  /* Module* Program;
-   *  LLVMContext& Context = getGlobalContext();
-   *  IRBuilder<> Builder(Context);
-   *  FunctionPassManager FPM(Program);
-   *  ExecutionEngine* Engine;*/
+  /*Module* Program;
+  LLVMContext& Context = getGlobalContext();
+  IRBuilder<> Builder(Context);
+  FunctionPassManager FPM(Program);
+  ExecutionEngine* Engine;*/
   
   #define List  false
   #define Atom  true
@@ -99,6 +100,7 @@ namespace Hylas
   {
         bool allow_RedefineMacros;
         bool allow_RedefineFunctions;
+        bool allow_RedefinePrePostfixes;
         bool output;
   };
   
@@ -356,39 +358,38 @@ namespace Hylas
   void init_optimizer()
   {
     /*FPM.add(createBasicAliasAnalysisPass());
-     *    FPM.add(createInstructionCombiningPass());
-     *    FPM.add(createReassociatePass());
-     *    FPM.add(createGVNPass());
-     *    FPM.add(createCFGSimplificationPass());
-     *    FPM.add(createPromoteMemoryToRegisterPass());
-     *    FPM.doInitialization();*/
+    FPM.add(createInstructionCombiningPass());
+    FPM.add(createReassociatePass());
+    FPM.add(createGVNPass());
+    FPM.add(createCFGSimplificationPass());
+    FPM.doInitialization();*/
   }
   
   void init()
   {
-    //InitializeNativeTarget();
-    //Program = new Module("Hylas Lisp",Context);
+    /*InitializeNativeTarget();
+    Program = new Module("Hylas Lisp",Context);*/
     master.allow_RedefineMacros = true;
     master.allow_RedefineFunctions = false;
     master.output = plain;
     init_stdlib();
     init_types();
-    init_optimizer();
+    //init_optimizer();
     //Engine =  EngineBuilder(Program).create();
   }
   
-  /*void compileIR(string in)
-   *  {
-   *    SMDiagnostic errors;
-   *    ParseAssemblyString(in.c_str(),Program,errors,Context);
-   *    if(!errors.getMessage().empty())
-   *      printf("\n%s",errors.getMessage().c_str());
-   *    if(verifyModule(*Program))
-   *    {
-   *      printf("The IR verifier found an unknown error.");
-   *      Unwind();
-   }
-   }*/
+  void compileIR(string in)
+  {
+    /*SMDiagnostic errors;
+    ParseAssemblyString(in.c_str(),Program,errors,Context);
+    if(!errors.getMessage().empty())
+      printf("\n%s",errors.getMessage().c_str());
+    if(verifyModule(*Program))
+    {
+      printf("The IR verifier found an unknown error.");
+      Unwind();
+    }*/
+  }
   
   #include "tests.hpp"
 }

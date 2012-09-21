@@ -28,7 +28,7 @@
   
   string def_global(Form* form)
   {
-    
+    return "";
   }
   
   string set(Form* form)
@@ -64,7 +64,7 @@
     out += emitCode(nth(form,2));
     if(latest_type() != res_type(get_res(address)))
       error(form,"Basic mathematical operations require boths operands to be of\
-the same type. Here, the first operand was of type '",res_type(get_res(address)),\
+ the same type. Here, the first operand was of type '",res_type(get_res(address)),\
 "', while the second was of type '",latest_type(),"'.");       
     return out + get_unique_res(latest_type()) + " = " + opcode + " " + latest_type()
     + " " + get_res(address) + ", " + get_current_res();
@@ -86,7 +86,7 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
   string icmp(Form* form)
   {
     string out;
-    string cmp_code = val(nth(form,1));
+    string cmp_code = val(nth(form,2));
     bool member;
     for(unsigned long i = 0; i < allowedIntComparisons.size(); i++)
     {
@@ -95,16 +95,21 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
     }
     if(!member)
       error(form,"The integer comparison code'",cmp_code,"' does not exist.");
-    out += emitCode(nth(form,2));
+    out += emitCode(nth(form,1));
+    unsigned long address = res_version;
     out += emitCode(nth(form,3));
+    if(latest_type() != res_type(get_res(address)))
+      error(form,"Basic mathematical operations require boths operands to be of\
+ the same type. Here, the first operand was of type '",res_type(get_res(address)),\
+"', while the second was of type '",latest_type(),"'.");
     return out + get_unique_res("i1") + " = icmp " + cmp_code + " "
-    + latest_type() + " " + get_res(res_version-1) + ", " + get_res(res_version);
+    + latest_type() + " " + get_res(address) + ", " + get_current_res();
   }
   
   string fcmp(Form* form)
   {
     string out;
-    string cmp_code = val(nth(form,1));
+    string cmp_code = val(nth(form,2));
     bool member;
     for(unsigned long i = 0; i < allowedFloatComparisons.size(); i++)
     {
@@ -113,10 +118,15 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
     }
     if(!member)
       error(form,"The integer comparison code'",cmp_code,"' does not exist.");
-    out += emitCode(nth(form,2));
+    out += emitCode(nth(form,1));
+    unsigned long address = res_version;
     out += emitCode(nth(form,3));
+    if(latest_type() != res_type(get_res(address)))
+      error(form,"Basic mathematical operations require boths operands to be of\
+ the same type. Here, the first operand was of type '",res_type(get_res(address)),\
+"', while the second was of type '",latest_type(),"'.");
     return out + get_unique_res("i1") + " = fcmp " + cmp_code + " "
-    + latest_type() + " " + get_res(res_version-1) + ", " + get_res(res_version);
+    + latest_type() + " " + get_res(address) + ", " + get_current_res();
   }
   
   string access(Form* form)
@@ -135,11 +145,11 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
       if(seeker->second.id == typeStructure)
       {
         //Passed, check if it has that member
-        map<string,pair<long,string> >::iterator checker = seeker->second.members.find(member);
+        map<string,pair<unsigned long,string> >::iterator checker = seeker->second.members.find(member);
         if(checker != seeker->second.members.end())
         {
           //Passed, record the member position
-          member_loc = to_string<long>(checker->second.first);
+          member_loc = to_string<unsigned long>(checker->second.first);
           member_type = checker->second.second;  
         }
         else
@@ -157,14 +167,14 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
     //Find in Generics
     for(unsigned long i = 0; i < Generics.size(); i++)
     {
-      map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
+      map<string,map<string,pair<unsigned long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
       if(finder != Generics[i].second.specializations.end())
       {
-        map<string,pair<long,string> >::iterator checker = finder->second.find(member);
+        map<string,pair<unsigned long,string> >::iterator checker = finder->second.find(member);
         if(checker != Generics[i].second.members.end())
         {
           //Passed, record the member position
-          member_loc = to_string<long>(checker->second.first);
+          member_loc = to_string<unsigned long>(checker->second.first);
           member_type = checker->second.second;
         }
       }
@@ -261,6 +271,8 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
     }
     out = cutlast(out) + ")\n";
     //...
+    
+    return out;
   }
   
   string embed_llvm(Form* form)
@@ -270,52 +282,22 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
   }
   
   string define_function(Form* form)
-  {
-    defineFunction(form,Function,noinline);
-    string out = fn_code;
-    fn_code = "";
-    return out;
-  }
+  { return defineFunction(form,Function,noinline); }
   
   string define_recursive(Form* form)
-  {
-    defineFunction(form,Recursive,noinline);
-    string out = fn_code;
-    fn_code = "";
-    return out;
-  }
+  { return defineFunction(form,Recursive,noinline); }
   
   string define_fast(Form* form)
-  {
-    defineFunction(form,Fast,noinline);
-    string out = fn_code;
-    fn_code = "";
-    return out;
-  }
+  { return defineFunction(form,Fast,noinline); }
   
   string define_inline(Form* form)
-  {
-    defineFunction(form,Function,doinline);
-    string out = fn_code;
-    fn_code = "";
-    return out;
-  }
+  { return defineFunction(form,Function,doinline); }
   
   string define_inline_recursive(Form* form)
-  {
-    defineFunction(form,Recursive,doinline);
-    string out = fn_code;
-    fn_code = "";
-    return out;
-  }
+  { return defineFunction(form,Recursive,doinline); }
   
   string define_inline_fast(Form* form)
-  {
-    defineFunction(form,Fast,doinline);
-    string out = fn_code;
-    fn_code = "";
-    return out;
-  }
+  { return defineFunction(form,Fast,doinline); }
   
   string direct_call(Form* form)
   {
@@ -343,8 +325,8 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
     string out;
     string type = printTypeSignature(nth(form,1));
     string type_cdr = string(type,1);
-    long nargs = length(form)-2;
-    map<long,string> inputs;
+    unsigned long nargs = length(form)-2;
+    map<unsigned long,string> inputs;
     unsigned long i;
     for(i = 2; i < length(form); i++)
     {
@@ -364,8 +346,8 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
         if(nargs == seeker->second.members.size())
         {
           //Iterate over members and compare it to inputs
-          map<long,string>::iterator aide = inputs.begin();
-          for(map<string,pair<long,string> >::iterator finder = seeker->second.members.begin();
+          map<unsigned long,string>::iterator aide = inputs.begin();
+          for(map<string,pair<unsigned long,string> >::iterator finder = seeker->second.members.begin();
               finder != seeker->second.members.end(); finder++)
           {
             //Check types
@@ -402,7 +384,7 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
       if(Generics[i].second.id == typeStructure)
       {
         //Found a structure
-        map<string,map<string,pair<long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
+        map<string,map<string,pair<unsigned long,string> > >::iterator finder = Generics[i].second.specializations.find(type);
         if(finder != Generics[i].second.specializations.end())
         {
           //Found the type in the Generic's specializations
@@ -410,8 +392,8 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
           {
             //Iterate over members and compare it to inputs
             //Check types
-            map<long,string>::iterator aide = inputs.begin();
-            for(map<string,pair<long,string> >::iterator looker = finder->second.begin();
+            map<unsigned long,string>::iterator aide = inputs.begin();
+            for(map<string,pair<unsigned long,string> >::iterator looker = finder->second.begin();
               looker != finder->second.end(); looker++)
             {
               //Check types
@@ -455,7 +437,7 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
   {
     string out;
     string type;
-    vector<long> inputs;
+    vector<unsigned long> inputs;
     unsigned long i = 1;
     for(; i < length(form); i++)
     {
@@ -468,8 +450,8 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
       type = latest_type();
     }
     string array_type;
-    array_type = "[" + to_string<long>(length(form)-1) + " x " + type + "]";
-    string address = (string)(global ? "@" : "%") + "array" + to_string<unsigned long>(++array_version);
+    array_type = "[" + to_string(length(form)-1) + " x " + type + "]";
+    string address = (string)(global ? "@" : "%") + "array" + to_string(++array_version);
     unsigned long address_pos;
     if(global)
       push(address + " = global " + array_type + " zeroinitializer");
@@ -577,27 +559,62 @@ the same type. Here, the first operand was of type '",res_type(get_res(address))
         + ((dialect == "Intel" ? "inteldailect" : "")) + " \"" + code + "\", ""()";
     return out;
   }
+    
+  string fixes(Form* in, bool pre)
+  {
+    if(length(in) < 3)
+      error(in,(pre?"(prefix)":"(postfix)")," takes at least three arguments: An atom to be replaced and code to replace it with.");
+    else if(islist(nth(in,1)))
+      error(in,"The first argument to ",(pre?"(prefix)":"(postfix)")," must be a symbolic atom.");
+    else if(analyze(val(nth(in,1))) != Symbol)
+      error(in,"The first argument to ",(pre?"(prefix)":"(postfix)")," must be a symbolic atom.");
+    else if(val(nth(in,1)).length() != 1)
+      error(in,"The first argument to ",(pre?"(prefix)":"(postfix)")," must be a single character long.");
+    char name = val(nth(in,1))[0];
+    if(islist(nth(in,2)))
+      error(in,"The second argument to ",(pre?"(prefix)":"(postfix)")," must be a string.");
+    else if(analyze(val(nth(in,1))) != String)
+      error(in,"The second argument to ",(pre?"(prefix)":"(postfix)")," must be a string.");
+    string code = val(nth(in,2));
+    map<char,string>::iterator checker = (pre?Prefixes:Postfixes).find(name);
+    if(checker != (pre?Prefixes:Postfixes).end() && master.allow_RedefinePrePostfixes)
+      warn(in,"Redefining ",(pre?"prefix":"postfix")," '",name,"'.");
+    else
+      error(in,"A ",(pre?"prefix":"postfix")," with that name ('",name,"' has already been defined.");
+    if(pre)
+      Prefixes[name] = code;
+    else
+      Postfixes[name] = code;
+    return "";
+  }
+  
+  string prefix(Form* in)
+  { return fixes(in,true); }
+  
+  string postfix(Form* in)
+  { return fixes(in,false); }
   
   void init_stdlib()
   {
     Scope new_scope;
     SymbolTable.push_back(new_scope);
-    //Init Toplevel
-    TopLevel["def"]              = &def_global;
-    TopLevel["main"]             = &main_fn;
-    TopLevel["LLVM"]             = &embed_llvm;
-    TopLevel["function"]         = &define_function;
-    TopLevel["recursive"]        = &define_recursive;
-    TopLevel["fast"]             = &define_fast;
-    TopLevel["inline"]           = &define_inline;
-    TopLevel["inline-recursive"] = &define_inline_recursive;
-    TopLevel["inline-fast"]      = &define_inline_fast;
-    TopLevel["foreign"]          = &foreign;
-    TopLevel["type"]             = &makeType;
-    TopLevel["structure"]        = &makeStructure;
-    TopLevel["generic"]          = &genericInterface;
-    TopLevel["asm"]              = &toplevel_asm;
     //Init Core
+    TopLevel["main"]         = &main_fn;
+    TopLevel["LLVM"]         = &embed_llvm;
+    TopLevel["def"]          = &def_global;
+    Core["function"]         = &define_function;
+    Core["recursive"]        = &define_recursive;
+    Core["fast"]             = &define_fast;
+    Core["inline"]           = &define_inline;
+    Core["inline-recursive"] = &define_inline_recursive;
+    Core["inline-fast"]      = &define_inline_fast;
+    Core["foreign"]          = &foreign;
+    TopLevel["type"]         = &makeType;
+    TopLevel["structure"]    = &makeStructure;
+    TopLevel["generic"]      = &genericInterface;
+    TopLevel["asm"]          = &toplevel_asm;
+    TopLevel["prefix"]       = &prefix;
+    TopLevel["postfix"]      = &postfix;
     Core["def"]         = &def_local;
     Core["set"]         = &set;
     Core["ret"]         = &ret;

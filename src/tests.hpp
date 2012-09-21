@@ -82,7 +82,7 @@
       cout << "      " << in.arguments[i] << " ";
     }
     cout << " \n   Generic specializations: " << endl;
-    for(map<string,map<string, pair<long,string> > >::iterator seeker = in.specializations.begin();
+    for(map<string,map<string, pair<unsigned long,string> > >::iterator seeker = in.specializations.begin();
         seeker != in.specializations.end(); seeker++)
     {
       cout << "      " << seeker->first << " ";
@@ -155,31 +155,31 @@
       //Testing the language Core
       "10",
       "(add 10 20)",
-      "(icmp eq 1 2)",
-      "(icmp ult 10 100)",
+      "(icmp 1 eq 2)",
+      "(icmp 10 ult 100)",
       //Testing function definition
       "(function test i64 ()\
         10)",
       "(function derp i64 ((n i64))\
         10)",
       "(function test bool ((n i64) (m i64))\
-        (icmp eq n m))",
+        (icmp n eq m))",
       "(function test2 bool ()\
-        (icmp eq 2 2))",      //Testing Function calling
+        (icmp 2 eq 2))",      //Testing Function calling
       "(test)",
       "(test 2 3)",
       "(test2)",
       "(recursive herp i64 ((n i64))\
         (sub n 1))",
-      "(if (icmp ult 1 2)\
+      "(if (icmp 1 ult 2)\
         true\
         false)",
       "(function sg bool ((n long))\
-        (flow (icmp ugt n 0)\
+        (flow (icmp n ugt 0)\
           true\
           false))",
-      "(function fib i64 ((n i64))\
-        (flow (icmp slt n 2)\
+      "(recursive fib i64 ((n i64))\
+        (flow (icmp n ult 2)\
           n\
           (add (fib (sub n 1))\
                (fib (sub n 2)))))",

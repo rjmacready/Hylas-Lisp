@@ -27,14 +27,14 @@
   
   struct Type : BaseType
   {
-    map<string,pair<long,string> > members;
+    map<string,pair<unsigned long,string> > members;
   };
   
   struct Generic : Type
   {
     vector<string> arguments;
     Form* code;
-    map<string,map<string, pair<long,string> > > specializations;
+    map<string,map<string, pair<unsigned long,string> > > specializations;
     vector<Form*> methods;
   };
   
@@ -44,7 +44,8 @@
   
   bool isInteger(string in)
   {
-    return ((in[0] == 'i') && (1 < from_string<long>(string(in,1,in.length()-1)) < (pow(2,23)-1)));
+    long tmp = from_string<long>(string(in,1,in.length()-1));
+    return ((in[0] == 'i') && ((tmp >= 1) && (tmp < (pow(2,23)-1))));
   }
   
   bool isCoreType(string in)
@@ -61,14 +62,10 @@
   
   bool isArgument(Form* in, map<string,Form*> arguments)
   {
-    if(isatom(in))
-    {
-      map<string,Form*>::iterator seeker = arguments.find(val(in));
-      if(seeker != arguments.end())
-        return true;
-      return false;      
-    }
-    error(in,"isArgument must be given an atom, but a list was given.");
+    map<string,Form*>::iterator seeker = arguments.find(val(in));
+    if(seeker != arguments.end())
+      return true;
+    return false;
   }
   
   Form* editForm(Form* in, map<string,Form*> replacements)
@@ -102,9 +99,8 @@
         map<string,Form*>::iterator seeker = replacements.find(val(in));
         return seeker->second;
       }
-      else
-        return in;
     }
+    return in;
   }
   
   string specializeType(Generic* in, map<string,Form*> replacements, string signature)
@@ -138,20 +134,14 @@
     {
       string tmp = val(form);
       if(isCoreType(tmp))
-      {
         return tmp;
-      }
       else
       {
         map<string,Type>::iterator seeker = BasicTypes.find(tmp);
         if(seeker != BasicTypes.end())
-        {
           return "%" + tmp;
-        }
         else
-        {
           error(form,"Came across an unknown type: '",tmp,"'.");
-        }
       }
     }
     else if(islist(form))
@@ -161,7 +151,25 @@
       string type_name = val(car(form));
       if(type_name == "pointer")
       {
+        if(length(form) != 2)
+          error(form,"(pointer) takes exactly one argument.");
         return printTypeSignature(cadr(form))+"*";
+      }
+      else if(type_name == "unpointer")
+      {
+        if(length(form) != 2)
+          error(form,"(unpointer) takes exactly one argument.");
+        string signature = printTypeSignature(cadr(form));
+        if(signature[signature.length()-1] != '*')
+          error(form,"Trying to (unpointer) a non-pointer type.");
+        return cutlast(signature);
+      }
+      else if(type_name == "typeof")
+      {
+        if(length(form) != 2)
+          error(form,"(typeof) takes exactly one argument.");
+        emitCode(cadr(form));
+        return latest_type();
       }
       for(unsigned long i = 0; i < Generics.size(); i++)
       {
@@ -170,7 +178,7 @@
           if(Generics[i].second.arguments.size() != length(form)-1)
           {
             error(form,"Wrong number of arguments to specialize the Generic '",
-                  type_name,"'.",to_string<long>(Generics[i].second.arguments.size()),
+                  type_name,"'.",to_string(Generics[i].second.arguments.size()),
                   " are required, but ",to_string<unsigned long>(length(form)-1)," were given.");
           }
           else
@@ -182,7 +190,7 @@
               signature += printTypeSignature(nth(form,j)) + "_";
             }
             signature = cutlast(signature);
-            for(map<string,map<string, pair<long,string> > >::iterator seeker = Generics[i].second.specializations.begin();
+            for(map<string,map<string, pair<unsigned long,string> > >::iterator seeker = Generics[i].second.specializations.begin();
                 seeker != Generics[i].second.specializations.end(); seeker++)
             { 
               if(seeker->first == signature)
@@ -207,6 +215,7 @@
       }
       error(form,"An unknown Generic type, '",type_name,"' was provided for specialization.");
     }
+    return "void";
   }
   
   bool checkTypeExistence(string name)
@@ -220,7 +229,7 @@
     tmp.id = typeSimple;
     if(length(in) != 3)
     {
-      error(in,"(type) takes exactly 3 arguments. ",to_string<long>(length(in)),
+      error(in,"(type) takes exactly 3 arguments. ",to_string(length(in)),
             " were given.");
     }
     if(isatom(cadr(in)))
@@ -293,7 +302,7 @@
             printf("ERROR: Can't use a non-symbolic atom as a field name.");
             Unwind();
           }
-          tmp.members[field_name] = pair<int,string>(i-2,printTypeSignature(cadr(current_field)));
+          tmp.members[field_name] = pair<long,string>(i-2,printTypeSignature(cadr(current_field)));
         }
       }
       else
@@ -303,7 +312,7 @@
       }
     }
     string out = "%" + name + " = type {";
-    for(map<string,pair<long,string> >::iterator seeker = tmp.members.begin(); seeker != tmp.members.end(); seeker++)
+    for(map<string,pair<unsigned long,string> >::iterator seeker = tmp.members.begin(); seeker != tmp.members.end(); seeker++)
     {
       out += seeker->second.second + ", ";
     }
@@ -400,7 +409,7 @@
     }
     if(islist(arglist))
     {
-      for(long i = 0; i < length(arglist); i++)
+      for(unsigned long i = 0; i < length(arglist); i++)
       {
         if(isatom(nth(arglist,i)))
         {
@@ -436,23 +445,27 @@
   
   Generic addGenericMethod(string name, Form* in)
   {
+    Generic out;
     for(unsigned long i = 0; i < Generics.size(); i++)
     {
       if(Generics[i].first == name)
       {
-        if(Generics[i].second.id == typeStructure);
+        if(Generics[i].second.id == typeStructure)
         {
           Form* code = readString("(" + val(car(nth(in,5))) + " " + val(nth(in,2)) + ")");
           code = append(code,cdr(nth(in,5)));
           Generics[i].second.methods.push_back(code);
-          return Generics[i].second;
+          out = Generics[i].second;
+          break;
         }
       }
     }
+    return out;
   }
   
   Generic makeGeneric(Form* in)
   {
+    Generic out;
     if(length(in) < 4)
     {
       printf("ERROR: Wrong number of arguments.");
@@ -484,7 +497,6 @@
             Unwind();
           }
           addGeneric(name,out);
-          return out;
         }
         else if(text == "function")
         {
@@ -495,43 +507,26 @@
             Unwind();
           }
           addGeneric(name,out);
-          return out;
         }
         else if(text == "method")
         {
           if(isatom(nth(in,2)))
           {
-            if(analyze(val(nth(in,2))) == Symbol)
+            if(val(nth(in,2)) == "of")
             {
               if(isatom(nth(in,3)))
               {
-                if(val(nth(in,3)) == "of")
+                if(analyze(val(nth(in,3))) == Symbol)
                 {
-                  if(isatom(nth(in,4)))
+                  string generic_name = val(nth(in,3));
+                  if(!checkGenericExistence(generic_name,typeStructure))
                   {
-                    if(analyze(val(nth(in,4))) == Symbol)
-                    {
-                      string generic_name = val(nth(in,4));
-                      if(!checkGenericExistence(generic_name,typeStructure))
-                      {
-                        printf("ERROR: The Generic for this method doesn't exist.");
-                        Unwind();
-                      }
-                      else
-                      {
-                        return addGenericMethod(generic_name,in);
-                      }
-                    }
-                    else
-                    {
-                      printf("ERROR:");
-                      Unwind();
-                    }
+                    printf("ERROR: The Generic for this method doesn't exist.");
+                    Unwind();
                   }
                   else
                   {
-                    printf("ERROR:");
-                    Unwind();
+                    out = addGenericMethod(generic_name,in);
                   }
                 }
                 else
@@ -540,11 +535,17 @@
                   Unwind();
                 }
               }
+              else
+              {
+                printf("ERROR:");
+                Unwind();
+              }
+            }
+            else
+            {
               printf("ERROR:");
               Unwind();
             }
-            printf("ERROR:");
-            Unwind();
           }
           printf("ERROR:");
           Unwind();
@@ -561,6 +562,7 @@
       printf("ERROR: The first argument to (generic) must be either 'function' or 'structure', but a list was found.");
       Unwind();
     }
+    return out;
   }
   
   string genericInterface(Form* form)
@@ -573,11 +575,5 @@
   
   void init_types()
   {
-    CoreTypes;
-    CoreTypes.push_back("half");
-    CoreTypes.push_back("float");
-    CoreTypes.push_back("double");
-    CoreTypes.push_back("x86_fp80");
-    CoreTypes.push_back("fp128");
-    CoreTypes.push_back("ppc_fp128");
+    CoreTypes = {"half", "float", "double", "x86_fp80", "fp128", "ppc_fp128" };
   }

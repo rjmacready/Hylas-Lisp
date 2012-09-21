@@ -1,6 +1,6 @@
   map<string,string> WordMacros;
-  map<string,string> Prefixes;
-  map<string,string> Postfixes;
+  map<char,string> Prefixes;
+  map<char,string> Postfixes;
   
   void addWordMacro(string word, string replacement)
   {
@@ -29,6 +29,46 @@
       return seeker->second;
     else
       return word;
+  }
+  
+  string tryPrefixOrPostfix(string word)
+  {
+    if(word.length() < 3)
+      return word;
+    char prefix = word[0];
+    char postfix = word[word.length()-1];
+    map<char,string>::iterator seeker = Prefixes.find(prefix);
+    if(seeker != Prefixes.end()) //Found, apply
+    {
+      string replacement = cutfirst(cutlast(seeker->second));
+      string data = cutfirst(word);
+      for(unsigned long i = 0; i < replacement.length(); i++)
+      {
+        if(replacement[i] == '[')
+          if(replacement.length()-1 >= i+2)
+            if(replacement[i+1] == '@')
+              if(replacement[i+2] == ']')
+                return data.replace(i,3,data);
+      }
+    }
+    else
+    {
+      seeker = Postfixes.find(postfix);
+      if(seeker != Postfixes.end()) //Found, apply
+      {
+        string replacement = cutfirst(cutlast(seeker->second));
+        string data = cutfirst(word);
+        for(unsigned long i = 0; i < replacement.length(); i++)
+        {
+          if(replacement[i] == '[')
+            if(replacement.length()-1 >= i+2)
+              if(replacement[i+1] == '@')
+                if(replacement[i+2] == ']')
+                  return data.replace(i,3,data);
+        }
+      }
+    }
+    return word;
   }
   
   inline Form* cons(Form* first, Form* second)
@@ -62,8 +102,7 @@
       printf("ERROR: (append) takes two lists, but the second argument was an atom.");
       Unwind();
     }
-    else
-      return cons(car(first),append(cdr(first),second));
+    return cons(car(first),append(cdr(first),second));
   }
   
   inline unsigned long length(Form* in)
@@ -122,7 +161,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     self->line = curline; self->column = curcolumn; return self; }
   
   inline void clear_reader()
-  { curline, curcolumn = 0; }  
+  { curline = 0; curcolumn = 0; }  
   
   inline char next_char(FILE* in)
   {
@@ -199,7 +238,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
       buffer[index++] = '\0';
       if(ch == ')' || ch == '(') 
         unget_char(ch, in);
-      return getMacro(buffer);
+      return tryPrefixOrPostfix(getMacro(buffer));
     }
   }
   
@@ -286,11 +325,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
         out += ")";
         return out;
       }
-      else
-      {
-        return val(in);
-      } 
     }
+    return val(in);
   }
   
   #define BooleanTrue	        0

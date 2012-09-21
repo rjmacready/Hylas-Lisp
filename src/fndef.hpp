@@ -5,6 +5,7 @@
   {
     string name;
     string ret_type;
+    string fn_ptr_type;
     unsigned long nargs;
     map<string,string> arguments;
     bool fastcc;
@@ -208,8 +209,7 @@
     else if(fn_type == Fast) { newfn.fastcc = true; newfn.tco = false; newfn.lining = inlining; }
     else if(fn_type == Recursive) { newfn.fastcc = true; newfn.tco = true; newfn.lining = inlining; }
     string fn_name = val(nth(form,name_pos));
-    string fn_ret_type = printTypeSignature(nth(form,ret_type_pos));
-    newfn.ret_type = fn_ret_type;
+    newfn.ret_type = printTypeSignature(nth(form,ret_type_pos));
     /*map<string,Lambda>::iterator macfind = Macros.find(fn_name);
     if(macfind != Macros.end())
       { printf("ERROR: A macro has already been defined with that name."); Unwind(); }*/
@@ -217,10 +217,11 @@
     SymbolTable.push_back(new_scope);
     //Iterate over arguments
     map<string,string> fn_args;
+    newfn.fn_ptr_type = newfn.ret_type + "(";
     Form* current_arg;
     if(args != NULL)
     {
-      for(long i = 0; i < length(args); i++)
+      for(unsigned long i = 0; i < length(args); i++)
       {
         current_arg = nth(args,i);
         //printf("\nAnalyzing:%s",print(current_arg).c_str());
@@ -278,16 +279,6 @@
       seeker->second.versions.push_back(newfn);
       string arg_code;
       string arg_name, base_name;
-      for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
-      {
-        arg_name = "%" + i->first+to_string(ScopeDepth);
-        base_name = arg_name + "_base";
-        arg_code += i->second + " " + base_name + ",";
-        tmp_code += allocate(arg_name,i->second);
-        tmp_code += store(i->second,base_name,arg_name);
-      }
-      tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + to_string(seeker->second.versions.size()-1)
-      + "(" + ((length(args) == 1) ? cutlast(cutlast(arg_code)) : cutlast(arg_code)) + ") {\n" + tmp_code;
     }
     else
     {
@@ -296,30 +287,40 @@
       FunctionTable[fn_name] = new_metafn;
       string arg_code;
       string arg_name, base_name;
-      for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
-      {
-        arg_name = "%" + i->first+to_string(ScopeDepth);
-        base_name = arg_name + "_base";
-        arg_code += i->second + " " + base_name + ",";
-        tmp_code += allocate(arg_name,i->second);
-        tmp_code += store(i->second,base_name,arg_name);
-      }
-      tmp_code = (string)"define " + fn_ret_type + " @" + fn_name + "0" + "(" + ((length(args) == 1) ? cutlast(arg_code) : cutlast(arg_code))
-      + ") {\n" + tmp_code;
     }
+    string arg_name, base_name, arg_code, out;
+    for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
+    {
+      arg_name = "%" + i->first+to_string(ScopeDepth);
+      base_name = arg_name + "_base";
+      arg_code += i->second + " " + base_name + ",";
+      tmp_code += allocate(arg_name,i->second);
+      tmp_code += store(i->second,base_name,arg_name);
+      //Put the type in the fn pointer
+      newfn.fn_ptr_type += i->second + ",";
+    }
+    string processed_name = "@" + fn_name + ((seeker != FunctionTable.end()) ? to_string(seeker->second.versions.size()-1) : "0");
+    tmp_code = (string)"define " + newfn.ret_type + " " + processed_name;
+    tmp_code += "(" + ((length(args) == 1) ? cutlast(arg_code) : cutlast(arg_code)) + ") {\n";
     //Compile the code
     for(unsigned long i = body_starting_pos; i < length(form);i++)
     {
       tmp_code += emitCode(nth(form,i));
     }
-    fn_code = tmp_code + "ret " + fn_ret_type + " " + get_current_res() + "\n}";;
-    return fn_code;
+    fn_code = tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}";;
+    push(fn_code);
+    //Create a pointer to the function
+    newfn.fn_ptr_type = ((args == NULL)?newfn.fn_ptr_type:cutlast(newfn.fn_ptr_type)) + ")*";
+    out += allocate(get_unique_tmp(),newfn.fn_ptr_type);
+    out += store(newfn.fn_ptr_type,processed_name,get_current_tmp());
+    out += load(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,get_current_tmp());
+    return out;
   }
   
   string callGeneric(long gen_pos, Form* code)
   {
-    printf("Not implemented yet.");
-    Unwind();
+    //Not implemented yet
+    return "";
   }
   
   string callFunction(string func, Form* code)
@@ -329,72 +330,68 @@
       printf("ERROR: A non-symbolic atom was used as a function name.");
       Unwind();
     }
-    else
+    string callcode;
+    for(unsigned long i = 0; i < Generics.size(); i++)
     {
-      for(unsigned long i = 0; i < Generics.size(); i++)
+      if(Generics[i].first == func)
       {
-        if(Generics[i].first == func)
+        if(Generics[i].second.id == typeFunction)
         {
-          if(Generics[i].second.id == typeFunction)
-          {
-            return callGeneric(i,code);
-          }
+          return callGeneric(i,code);
         }
       }
-      map<string,MetaFunction>::iterator seeker = FunctionTable.find(func);
-      if(seeker != FunctionTable.end())
-      {
-        vector<string> arguments;
-        vector<long long int> res_nums;
-        string callcode;
-        if(code != NULL)
-        {
-          Form* curr;
-          for(long i = 0; i < length(code); i++)
-          {
-            curr = nth(code,i);
-            callcode += emitCode(curr);
-            arguments.push_back(res_type(get_current_res()));
-            res_nums.push_back(res_version);
-          }
-        }
-        for(unsigned int i = 0; i < seeker->second.versions.size(); i++)
-        {
-          if(seeker->second.versions[i].arguments.size() == arguments.size())
-          {
-            map<string,string>::iterator arg_iterator = seeker->second.versions[i].arguments.begin();
-            for(unsigned int j = 0; j < arguments.size(); j++)
-            {
-              if(arguments[j] != arg_iterator->second)
-              {
-                break;
-              }
-              //We don't have to check that the iterator is != arguments.end()
-              //because that is done implicitly by the size() == arguments.size() check
-              arg_iterator++;
-            }
-            //Found a matching function
-            callcode += get_unique_res(seeker->second.versions[i].ret_type);
-            callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
-            callcode += seeker->second.versions[i].fastcc ? "fastcc " : "ccc ";
-            callcode += seeker->second.versions[i].ret_type + " @" + func + to_string(i) + (arguments.empty() ? "()" :"(");
-            for(arg_iterator = seeker->second.versions[i].arguments.begin();
-                arg_iterator != seeker->second.versions[i].arguments.end();
-            arg_iterator++)
-            {
-              callcode += arg_iterator->second + " ";
-              callcode += get_res(res_nums[0]) + ",";
-              res_nums.erase(res_nums.begin());
-            }
-            callcode = (arguments.empty() ? callcode : (cutlast(callcode) + ")"));
-            return callcode;
-          }
-        }
-      }
-      else
-      {
-        printf("ERROR: Couldn't find the function '%s'.",func.c_str());
-        Unwind();
-      }        
     }
+    map<string,MetaFunction>::iterator seeker = FunctionTable.find(func);
+    if(seeker != FunctionTable.end())
+    {
+      vector<string> arguments;
+      vector<unsigned long> res_nums;
+      if(code != NULL)
+      {
+        Form* curr;
+        for(unsigned long i = 0; i < length(code); i++)
+        {
+          curr = nth(code,i);
+          callcode += emitCode(curr);
+          arguments.push_back(res_type(get_current_res()));
+          res_nums.push_back(res_version);
+        }
+      }
+      for(unsigned long i = 0; i < seeker->second.versions.size(); i++)
+      {
+        if(seeker->second.versions[i].arguments.size() == arguments.size())
+        {
+          map<string,string>::iterator arg_iterator = seeker->second.versions[i].arguments.begin();
+          for(unsigned long j = 0; j < arguments.size(); j++)
+          {
+            if(arguments[j] != arg_iterator->second)
+            {
+              break;
+            }
+            //We don't have to check that the iterator is != arguments.end()
+            //because that is done implicitly by the size() == arguments.size() check
+            arg_iterator++;
+          }
+          //Found a matching function
+          callcode += get_unique_res(seeker->second.versions[i].ret_type);
+          callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
+          callcode += seeker->second.versions[i].fastcc ? "fastcc " : "ccc ";
+          callcode += seeker->second.versions[i].ret_type 
+            + seeker->second.versions[i].fn_ptr_type 
+            + " @" + func + to_string(i) + (arguments.empty() ? "()" :"(");
+          for(arg_iterator = seeker->second.versions[i].arguments.begin();
+              arg_iterator != seeker->second.versions[i].arguments.end();
+          arg_iterator++)
+          {
+            callcode += arg_iterator->second + " ";
+            callcode += get_res(res_nums[0]) + ",";
+            res_nums.erase(res_nums.begin());
+          }
+          callcode = (arguments.empty() ? callcode : (cutlast(callcode) + ")"));
+        }
+      }
+    }
+    else if(seeker == FunctionTable.end())
+      error(code,"Couldn't find the function '",func,"'.");
+    return callcode;
   }
