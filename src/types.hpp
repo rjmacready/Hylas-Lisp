@@ -274,6 +274,7 @@
     tmp.id = typeStructure;
     validateStructure(in);
     string name = val(nth(in,1));
+    BasicTypes[name] = tmp;
     if(checkTypeExistence(name))
     {
       printf("ERROR: Type already exists.");
@@ -318,7 +319,6 @@
     }
     out = cutlast(cutlast(out));
     out += "}";
-    BasicTypes[name] = tmp;
     return out;
   }
   

@@ -38,11 +38,11 @@ namespace Hylas
   using namespace std;
   using namespace llvm;
   
-  /*Module* Program;
+  Module* Program;
   LLVMContext& Context = getGlobalContext();
   IRBuilder<> Builder(Context);
   FunctionPassManager FPM(Program);
-  ExecutionEngine* Engine;*/
+  ExecutionEngine* Engine;
   
   #define List  false
   #define Atom  true
@@ -298,8 +298,8 @@ namespace Hylas
         }
         case String:
         {
-          //Remember strings come with their double quotes at the end
-          string str = cutlast(string(val(form),1));
+          //Remember strings come without their double quotes
+          string str = val(form);
           long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";
           push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + str + "\\0A\\00\"");
@@ -357,38 +357,35 @@ namespace Hylas
   
   void init_optimizer()
   {
-    /*FPM.add(createBasicAliasAnalysisPass());
+    FPM.add(createBasicAliasAnalysisPass());
     FPM.add(createInstructionCombiningPass());
     FPM.add(createReassociatePass());
     FPM.add(createGVNPass());
     FPM.add(createCFGSimplificationPass());
-    FPM.doInitialization();*/
+    FPM.doInitialization();
   }
   
   void init()
   {
-    /*InitializeNativeTarget();
+    InitializeNativeTarget();
     Program = new Module("Hylas Lisp",Context);*/
     master.allow_RedefineMacros = true;
     master.allow_RedefineFunctions = false;
     master.output = plain;
     init_stdlib();
     init_types();
-    //init_optimizer();
-    //Engine =  EngineBuilder(Program).create();
+    init_optimizer();
+    Engine =  EngineBuilder(Program).create();
   }
   
   void compileIR(string in)
   {
-    /*SMDiagnostic errors;
+    SMDiagnostic errors;
     ParseAssemblyString(in.c_str(),Program,errors,Context);
     if(!errors.getMessage().empty())
       printf("\n%s",errors.getMessage().c_str());
     if(verifyModule(*Program))
-    {
-      printf("The IR verifier found an unknown error.");
-      Unwind();
-    }*/
+      nerror("The IR verifier found an unknown error.");
   }
   
   #include "tests.hpp"

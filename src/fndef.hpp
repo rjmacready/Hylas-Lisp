@@ -376,9 +376,12 @@
           callcode += get_unique_res(seeker->second.versions[i].ret_type);
           callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
           callcode += seeker->second.versions[i].fastcc ? "fastcc " : "ccc ";
-          callcode += seeker->second.versions[i].ret_type 
-            + seeker->second.versions[i].fn_ptr_type 
-            + " @" + func + to_string(i) + (arguments.empty() ? "()" :"(");
+          callcode += seeker->second.versions[i].ret_type;
+          //Clean the function pointer type to remove the return type
+          string clean_fn_ptr = seeker->second.versions[i].fn_ptr_type;
+          clean_fn_ptr = string(clean_fn_ptr,clean_fn_ptr.find('(')+1);
+          callcode += clean_fn_ptr; 
+          callcode += " @" + func + to_string(i) + (arguments.empty() ? "()" :"(");
           for(arg_iterator = seeker->second.versions[i].arguments.begin();
               arg_iterator != seeker->second.versions[i].arguments.end();
           arg_iterator++)

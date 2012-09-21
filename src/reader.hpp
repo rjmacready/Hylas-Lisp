@@ -40,33 +40,14 @@
     map<char,string>::iterator seeker = Prefixes.find(prefix);
     if(seeker != Prefixes.end()) //Found, apply
     {
-      string replacement = cutfirst(cutlast(seeker->second));
-      string data = cutfirst(word);
-      for(unsigned long i = 0; i < replacement.length(); i++)
-      {
-        if(replacement[i] == '[')
-          if(replacement.length()-1 >= i+2)
-            if(replacement[i+1] == '@')
-              if(replacement[i+2] == ']')
-                return data.replace(i,3,data);
-      }
+      word = cutfirst(word);
+      word = seeker->second+word;
     }
-    else
+    seeker = Postfixes.find(postfix);
+    if(seeker != Postfixes.end()) //Found, apply
     {
-      seeker = Postfixes.find(postfix);
-      if(seeker != Postfixes.end()) //Found, apply
-      {
-        string replacement = cutfirst(cutlast(seeker->second));
-        string data = cutfirst(word);
-        for(unsigned long i = 0; i < replacement.length(); i++)
-        {
-          if(replacement[i] == '[')
-            if(replacement.length()-1 >= i+2)
-              if(replacement[i+1] == '@')
-                if(replacement[i+2] == ']')
-                  return data.replace(i,3,data);
-        }
-      }
+      word = cutlast(word);
+      word = word+seeker->second;
     }
     return word;
   }
@@ -152,7 +133,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     }
     return car(node);
   }
-
+  
   long curline = 0;
   int curcolumn = 0;
 
@@ -211,8 +192,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     if(ch == '"')
     {
       char text[10000];
-      text[0] = '"';
-      int index = 1;
+      int index = 0;
       ch = next_char(in);
       while(true)
       {
@@ -222,7 +202,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
         tmp = ch;
         ch = next_char(in);
       }
-      text[index++] = '"';
       text[index++] = '\0';
       return getMacro(text);
     }

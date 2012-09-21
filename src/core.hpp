@@ -6,19 +6,19 @@
   vector<string> allowedIntComparisons;
   vector<string> allowedFloatComparisons;
   
-  string def_local(Form* form)
+  string def(Form* form, bool global, bool typeonly)
   {
     string varname = val(nth(form,1));
-    Variable* result = lookup(varname);
-    if(result != NULL)
-    {
-      printf("ERROR: Symbol already defined.");
-      Unwind();
-    }
+    Variable* tmp = lookup(varname);
+    if(tmp != NULL)
+      error(form,"Symbol already defined.");
     string out = emitCode(nth(form,2));
     string type = latest_type();
-    string fullname = "%"+varname;
-    out += allocate(fullname,latest_type());
+    string fullname = (tmp->global?"@":"%")+varname;
+    if(tmp->global)
+      push(fullname + " = global " + type + " zeroinitializer";
+    else
+      out += allocate(fullname,latest_type());
     out += store(type,get_current_res(),fullname);
     SymbolTable[ScopeDepth][varname].sym = type;
     SymbolTable[ScopeDepth][varname].constant = false;
@@ -27,20 +27,26 @@
   }
   
   string def_global(Form* form)
-  {
-    return "";
-  }
+  { return def(form,true,false); }
+  
+  string def_local(Form* form)
+  { return def(form,false,false); }
+  
+  string def_as_global(Form* form)
+  { return def(form,true,true); }
+  
+  string def_as_local(Form* form)
+  { return def(form,false,true); }
   
   string set(Form* form)
   {
     string varname = val(nth(form,1));
     Variable* tmp = lookup(varname);
     if(tmp == NULL)
-    {
       error_unbound(nth(form,1));
-    }
     string out = emitCode(nth(form,2));
-    out += store(latest_type(),get_current_res(),"%"+varname);
+    out += store(latest_type(),get_current_res(),
+                 (tmp->global?"@":"%")+varname);
     return out;
   }
   
@@ -264,15 +270,25 @@
   
   string foreign(Form* form)
   {
-    string out = "declare " + val(nth(form,2)) + " @" + val(nth(form,1)) + "(";
+    string name = val(nth(form,1));
+    string ret_type = val(nth(form,2));
+    string args = "(";
+    string call_args;
+    string out = "declare " + ret_type + " @" + name + "(";
     for(unsigned int i = 3; i <= length(form)-1; i++)
     {
-      out += val(nth(form,i)) + ", ";
+      string type = val(nth(form,i));
+      out += type + ", ";
+      args += "(arg." + to_string(i) + " " + type + ")";
+      call_args += " " + type;
     }
     out = cutlast(out) + ")\n";
-    //...
-    
-    return out;
+    push(out);
+    args += ")";
+    out =
+      "(function " + name + " " + ret_type + " " + args
+      + "(call " + name + " " + ret_type + call_args + "))";
+    return emitCode(out);
   }
   
   string embed_llvm(Form* form)
@@ -305,13 +321,15 @@
     string name = val(nth(form,1));
     string ret_type = val(nth(form,2));
     string c_conv = val(nth(form,3));
+    string fn_ptr_type = "(";
     map<long,string> inputs;
     for(unsigned long i = 0; i < length(form); i++)
     {
       out += emitCode(nth(form,i));
       inputs[res_version] = latest_type();
+      fn_ptr_type += latest_type() + ",";
     }
-    out += (string)"call " + ret_type + " " + c_conv + " @" + name + "(";
+    out += (string)"call " + ret_type + " " + c_conv + " " + cutlast(fn_ptr_type) + "* @" + name + "(";
     for(map<long,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
     {
       out += seeker->second + " " + get_res(seeker->first) + ",";
@@ -559,6 +577,11 @@
         + ((dialect == "Intel" ? "inteldailect" : "")) + " \"" + code + "\", ""()";
     return out;
   }
+  
+  string word(Form* in)
+  {
+    return "";
+  }
     
   string fixes(Form* in, bool pre)
   {
@@ -594,6 +617,14 @@
   string postfix(Form* in)
   { return fixes(in,false); }
   
+  string import(Form* in)
+  {
+    string filepath = cutfirst(cutlast(print(cdr(in))));
+    if(filepath.find(".hylas") == string::npos &&)
+      filepath = filepath + ".hylas";
+    return "";
+  }
+  
   void init_stdlib()
   {
     Scope new_scope;
@@ -602,6 +633,14 @@
     TopLevel["main"]         = &main_fn;
     TopLevel["LLVM"]         = &embed_llvm;
     TopLevel["def"]          = &def_global;
+    TopLevel["def-as"]       = &def_as_global;
+    TopLevel["type"]         = &makeType;
+    TopLevel["structure"]    = &makeStructure;
+    TopLevel["generic"]      = &genericInterface;
+    TopLevel["asm"]          = &toplevel_asm;
+    TopLevel["word"]         = &word;
+    TopLevel["prefix"]       = &prefix;
+    TopLevel["postfix"]      = &postfix;
     Core["function"]         = &define_function;
     Core["recursive"]        = &define_recursive;
     Core["fast"]             = &define_fast;
@@ -609,41 +648,37 @@
     Core["inline-recursive"] = &define_inline_recursive;
     Core["inline-fast"]      = &define_inline_fast;
     Core["foreign"]          = &foreign;
-    TopLevel["type"]         = &makeType;
-    TopLevel["structure"]    = &makeStructure;
-    TopLevel["generic"]      = &genericInterface;
-    TopLevel["asm"]          = &toplevel_asm;
-    TopLevel["prefix"]       = &prefix;
-    TopLevel["postfix"]      = &postfix;
-    Core["def"]         = &def_local;
-    Core["set"]         = &set;
-    Core["ret"]         = &ret;
-    Core["add"]         = &add;
-    Core["fadd"]        = &fadd;
-    Core["sub"]         = &sub;
-    Core["fsub"]        = &fsub;
-    Core["mul"]         = &mul;
-    Core["fmul"]        = &fmul;
-    Core["udiv"]        = &udiv;
-    Core["sdiv"]        = &sdiv;
-    Core["fdiv"]        = &fdiv;
-    Core["urem"]        = &urem;
-    Core["srem"]        = &srem;
-    Core["frem"]        = &frem;
-    Core["icmp"]        = &icmp;
-    Core["fcmp"]        = &fcmp;
-    Core["begin"]       = &begin;
-    Core["if"]          = &simple_if;
-    Core["flow"]        = &flow;
-    Core["construct"]   = &construct;
-    Core["access"]      = &access;
-    Core["array"]       = &local_array;
-    Core["nth"]         = &nth_array;
-    Core["call"]        = &direct_call;
-    Core["allocate"]    = &mem_allocate;
-    Core["store"]       = &mem_store;
-    Core["load"]        = &mem_load;
-    Core["asm"]         = &inline_asm;
+    Core["def"]              = &def_local;
+    Core["def-as"]           = &def_as_local;
+    Core["set"]              = &set;
+    Core["ret"]              = &ret;
+    Core["add"]              = &add;
+    Core["fadd"]             = &fadd;
+    Core["sub"]              = &sub;
+    Core["fsub"]             = &fsub;
+    Core["mul"]              = &mul;
+    Core["fmul"]             = &fmul;
+    Core["udiv"]             = &udiv;
+    Core["sdiv"]             = &sdiv;
+    Core["fdiv"]             = &fdiv;
+    Core["urem"]             = &urem;
+    Core["srem"]             = &srem;
+    Core["frem"]             = &frem;
+    Core["icmp"]             = &icmp;
+    Core["fcmp"]             = &fcmp;
+    Core["begin"]            = &begin;
+    Core["if"]               = &simple_if;
+    Core["flow"]             = &flow;
+    Core["construct"]        = &construct;
+    Core["access"]           = &access;
+    Core["array"]            = &local_array;
+    Core["nth"]              = &nth_array;
+    Core["call"]             = &direct_call;
+    Core["allocate"]         = &mem_allocate;
+    Core["store"]            = &mem_store;
+    Core["load"]             = &mem_load;
+    Core["asm"]              = &inline_asm;
+    Core["import"]           = &import;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");
