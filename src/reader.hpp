@@ -2,6 +2,29 @@
   map<char,string> Prefixes;
   map<char,string> Postfixes;
   
+  void addWordMacro(string word, string replacement);
+  string getMacro(string word);
+  string tryPrefixOrPostfix(string word, bool pre);
+  inline Form* cons(Form* first, Form* second);
+  Form* append(Form* first, Form* second);
+  inline unsigned long length(Form* in);
+  inline Form* nth(Form* in, long location);
+  inline Form* makeForm(string in, bool tag);
+  inline void clear_reader();
+  inline char next_char(FILE* in);
+  inline void unget_char(char c, FILE* in);
+  string next_token(FILE *in);
+  Form* read_tail(FILE *in);
+  bool isArgument(Form* in, map<string,Form*> arguments);
+  Form* editForm(Form* in, map<string,Form*> replacements);
+  Form* expand(Form* in, unsigned char order);
+  Form* expandEverything(Form* in);
+  Form* read(FILE* in);
+  Form* readFile(string filename);
+  Form* readString(string in);
+  string print(Form* in);
+  unsigned char analyze(string input);
+  
   void addWordMacro(string word, string replacement)
   {
     map<string,string>::iterator seeker = WordMacros.find(word);
@@ -31,23 +54,28 @@
       return word;
   }
   
-  string tryPrefixOrPostfix(string word)
+  string tryPrefixOrPostfix(string word, bool pre)
   {
     if(word.length() < 3)
       return word;
-    char prefix = word[0];
-    char postfix = word[word.length()-1];
-    map<char,string>::iterator seeker = Prefixes.find(prefix);
-    if(seeker != Prefixes.end()) //Found, apply
+    char replacement;
+    if(pre)
+      replacement = word[0];
+    else
+      replacement = word[word.length()-1];
+    map<char,string>::iterator seeker = (pre?Prefixes:Postfixes).find(replacement);
+    if(seeker != (pre?Prefixes:Postfixes).end()) //Found, apply
     {
-      word = cutfirst(word);
-      word = seeker->second+word;
-    }
-    seeker = Postfixes.find(postfix);
-    if(seeker != Postfixes.end()) //Found, apply
-    {
-      word = cutlast(word);
-      word = word+seeker->second;
+      if(pre)
+      {
+        word = cutfirst(word);
+        word = seeker->second+word;
+      }
+      else
+      {
+        word = cutlast(word);
+        word = word+seeker->second;
+      }
     }
     return word;
   }
@@ -226,7 +254,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
   
   Form* read_tail(FILE *in)
   {
-    string token = tryPrefixOrPostfix(getMacro(next_token(in)));
+    string token = next_token(in);
     if(token == ")")
     {
       return NULL;
@@ -244,6 +272,93 @@ whose length is %li.",location,print(in).c_str(),length(in));
       return cons(first, second);
     }
   }
+
+  bool isArgument(Form* in, map<string,Form*> arguments)
+  {
+    map<string,Form*>::iterator seeker = arguments.find(val(in));
+    if(seeker != arguments.end())
+      return true;
+    return false;
+  }
+  
+  Form* editForm(Form* in, map<string,Form*> replacements)
+  {
+    if(in == NULL)
+      return NULL;
+    else if(islist(in))
+    {
+      Form* out;
+      out = editForm(car(in),replacements);
+      in = cdr(in);
+      if(in == NULL)
+        out = cons(out,NULL);
+      else
+      {
+        while(in != NULL && islist(in))
+        {
+          out = append((isatom(out) ? cons(out,NULL) : out),
+                      (isatom(car(in)) ? cons(editForm(car(in),replacements),NULL) : cons(editForm(car(in),replacements),NULL)));
+          in = cdr(in);
+        }
+      }
+      return out;
+    }
+    else
+    {
+      if(isArgument(in,replacements))
+      {
+        map<string,Form*>::iterator seeker = replacements.find(val(in));
+        return seeker->second;
+      }
+    }
+    return in;
+  }
+  
+  #define expandMacros    0
+  #define expandPrefixes  1
+  #define expandPostfixes 2
+  
+  Form* expand(Form* in, unsigned char order)
+  {
+    if(in == NULL)
+      return NULL;
+    else if(islist(in))
+    {
+      Form* out;
+      out = expand(car(in),order);
+      in = cdr(in);
+      if(in == NULL)
+        out = cons(out,NULL);
+      else
+      {
+        while(in != NULL && islist(in))
+        {
+          out = append((isatom(out) ? cons(out,NULL) : out),
+                      (isatom(car(in)) ? cons(expand(car(in),order),NULL) : cons(expand(car(in),order),NULL)));
+          in = cdr(in);
+        }
+      }
+      return out;
+    }
+    else
+    {
+      string tmp;
+      if(order == expandMacros)
+        tmp = getMacro(val(in));
+      if(order == expandPrefixes)
+        tmp = tryPrefixOrPostfix(val(in),true);
+      if(order == expandPostfixes)
+        tmp = tryPrefixOrPostfix(val(in),false);
+      return readString(tmp);
+    }
+    return in;
+  }
+  
+  Form* expandEverything(Form* in)
+  {
+    return expand(expand(expand(in,expandMacros),expandPrefixes),expandPostfixes);
+    //return in;
+  }
   
   Form* read(FILE* in)
   {
@@ -255,7 +370,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
       return NULL;
     Form* result = makeForm(token,Atom);
     reseterror();
-    return result;
+    return expandEverything(result);
   }
   
   Form* readFile(string filename)
@@ -265,7 +380,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     Form* tmp = read(ptr);
     fclose(ptr);
     reseterror();
-    return tmp;
+    return expandEverything(tmp);
   }
   
   Form* readString(string in)
@@ -275,35 +390,113 @@ whose length is %li.",location,print(in).c_str(),length(in));
     fputs(in.c_str(),ptr);
     fputs("\n",ptr);
     fclose(ptr);
+    //remove("reader.tmp");
     reseterror();
-    return readFile("reader.tmp");
+    return expandEverything(readFile("reader.tmp"));
+  }
+  
+  struct RGB
+  {
+    char Red; char Green; char Blue;
+    RGB(char r, char g, char b): Red(r), Green(g), Blue(b) {}
+  };
+               
+  
+  RGB HSV_to_RGB(float h, float s, float v)
+  {
+    int h_i = (int)(h*6);
+    float f = h*6-h_i;
+    float p = v*(1-s);
+    float q = v*(1-f*s);
+    float t = v*(1-((1-f)*s));
+    float r,g,b;
+    if(h_i == 0)
+    {
+      r=v;
+      g=t;
+      b=p;
+    }
+    if(h_i == 1)
+    {
+      r=q;
+      g=v;
+      b=p;
+    }
+    if(h_i == 2)
+    {
+      r=p;
+      g=v;
+      b=t;
+    }
+    if(h_i == 3)
+    {
+      r=p;
+      g=q;
+      b=v;
+    }
+    if(h_i == 4)
+    {
+      r=t;
+      g=p;
+      b=v;
+    }
+    if(h_i == 5)
+    {
+      r=v;
+      g=p;
+      b=q;
+    }
+    return RGB((unsigned char)(r*256),
+               (unsigned char)(g*256),
+               (unsigned char)(b*256));
+  }
+  
+  double golden_ratio = 0.618033988749895;
+  int h = rand();
+  RGB genColor()
+  {
+    h += golden_ratio;
+    h = h%1;
+    return HSV_to_RGB(h,0.5,0.95);    
+  }
+  
+  string exportRGB(RGB in)
+  {
+    return "<div style=\"color:rgb(" + to_string(in.Red)
+          + "," + to_string(in.Green)
+          + "," + to_string(in.Blue) + ");\">";
   }
   
   string print(Form* in)
   {
-    if(master.output == HTML)
+    if(in == NULL)
     {
-      
+      if(master.output == HTML)
+        return exportRGB(genColor()) + "()</div>";
+      else
+        return "()";
     }
-    else
+    else if(islist(in))
     {
       string out;
-      if(in == NULL)
-        return "()";
-      else if(islist(in))
-      {
+      string level = exportRGB(genColor());
+      if(master.output == HTML)
+        out += level + "(</div>";
+      else
         out += "(";
+      out += print(car(in));
+      in = cdr(in);
+      while(in != NULL && islist(in))
+      {
+        out += " ";
         out += print(car(in));
         in = cdr(in);
-        while(in != NULL && islist(in))
-        {
-          out += " ";
-          out += print(car(in));
-          in = cdr(in);
-        }
-        out += ")";
-        return out;
       }
+      if(master.output == HTML)
+        out += level + ")</div>";
+      else
+        out += ")";
+      return out;
     }
     return val(in);
   }

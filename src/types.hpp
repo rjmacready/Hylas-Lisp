@@ -60,49 +60,6 @@
     return false;
   }
   
-  bool isArgument(Form* in, map<string,Form*> arguments)
-  {
-    map<string,Form*>::iterator seeker = arguments.find(val(in));
-    if(seeker != arguments.end())
-      return true;
-    return false;
-  }
-  
-  Form* editForm(Form* in, map<string,Form*> replacements)
-  {
-    if(in == NULL)
-      return NULL;
-    else if(islist(in))
-    {
-      Form* out;
-      out = editForm(car(in),replacements);
-      in = cdr(in);
-      if(in == NULL)
-      {
-        out = cons(out,NULL);
-      }
-      else
-      {
-        while(in != NULL && islist(in))
-        {
-          out = append((isatom(out) ? cons(out,NULL) : out),
-                      (isatom(car(in)) ? cons(editForm(car(in),replacements),NULL) : cons(editForm(car(in),replacements),NULL)));
-          in = cdr(in);
-        }
-      }
-      return out;
-    }
-    else
-    {
-      if(isArgument(in,replacements))
-      {
-        map<string,Form*>::iterator seeker = replacements.find(val(in));
-        return seeker->second;
-      }
-    }
-    return in;
-  }
-  
   string specializeType(Generic* in, map<string,Form*> replacements, string signature)
   {
     errormode = GenericError;

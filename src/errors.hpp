@@ -114,7 +114,7 @@
   void warn(Form* head, T const& ... text)
   {    
     error_print(text...);
-    cout << at(head);
+    //cout << at(head);
     if(master.output == HTML)
       cout << "</div>";
   }

@@ -1,1 +1,3 @@
-The authors are indebted to the LLVM compiler infrastructure project <llvm.org>.
+* The authors are indebted to the LLVM compiler infrastructure project <llvm.org>.
+
+* Martin Ankerl's article on generating pleasing colors programatically <martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/> served as the basis for the Rainbow Parentheses in this compiler

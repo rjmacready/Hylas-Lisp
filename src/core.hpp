@@ -294,8 +294,8 @@
   
   string embed_llvm(Form* form)
   {
-    string out = print(cdr(form));
-    return string(out,1,out.length()-2);
+    string out = val(nth(form,1));
+    return cutfirst(cutlast(out));
   }
   
   string define_function(Form* form)
@@ -330,12 +330,16 @@
       inputs[res_version] = latest_type();
       fn_ptr_type += latest_type() + ",";
     }
-    out += "call " + c_conv + " " + ret_type + " " + cutlast(fn_ptr_type) + ")* @" + name + "(";
+    out += allocate(get_unique_tmp(),ret_type);
+    out += get_unique_tmp() + " = call " + c_conv + " " + ret_type + " " + cutlast(fn_ptr_type) + ")* @" + name + "(";
     for(map<long,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
     {
       out += seeker->second + " " + get_res(seeker->first) + ",";
     }
-    return cutlast(out) + ")";
+    out = cutlast(out) + ")\n";
+    out += store(ret_type,get_current_tmp(),get_tmp(tmp_version-1));
+    out += load(get_unique_res(ret_type),ret_type,get_tmp(tmp_version-1));
+    return out;
   }
   
   string construct(Form* form)
@@ -561,7 +565,7 @@
   {
     if(cdr(in) == NULL)
       error(in,"No Assembly code provided.");
-    return (string)"module asm \"" + cdr(in) + "\"\n";
+    return (string)"module asm \"" + cutfirst(cutlast(val(cadr(in)))) + "\"\n";
   }
   
   string inline_asm(Form* in)

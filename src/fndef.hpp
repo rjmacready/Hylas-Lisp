@@ -29,8 +29,6 @@
    * - Iterate over every branch of the typecase, ensuring the first element of each list is a valid type name
    *  - Call defineFunction with the same function name, where the code is the precode plus the rest of the code in this branch (This should recursively apply nested typecases).*/
   
-  string fn_code;
-  
   void print(map<string,string> in)
   {
     printf("{\n");
@@ -90,110 +88,8 @@
         error(form,"The argument list must be a list.");
   }
   
-  /*
-   *    Don't touch this, it's some experimental shit
-   * 
-  
-  string poly_code;
-  
-  string polymorphicExpansion(Form* form, unsigned int pos)
-  {
-    map<string,unsigned long> arguments;
-    unsigned long nargs = length(args);
-    unsigned int i;
-    Form* current;
-    if(nargs > 0)
-    {
-      for(i = 0; i < length(args); i++)
-      {
-        current = nth(args,i);
-        if(islist(current))
-        {
-          if(isatom(car(current)))
-          {
-            if(val(car(current)) == "poly")
-            {
-              arguments[val(cdr(current))] = i;
-            }             
-          }
-        }
-      }
-      for(;pos < length(form); pos++)
-      {
-        current = nth(form,pos);
-        unsigned long argument_pos;
-        string precode;
-        string postcode;
-        vector<Form> replacements;
-        if(islist(current))
-        {
-          if(isatom(car(current)))
-          {
-            
-            if(val(car(current)) == "typecase")
-            {
-              string type;
-              if(length(current) < 3)
-              {
-                printf("ERROR: A typecase form takes at least three arguments.");
-                Unwind();
-              }
-              if(islist(nth(current,1)))
-              {
-                printf("ERROR: The first argument of a typecase must be the argument name");
-                Unwind();
-              }
-              else
-              {
-                type = val(nth(current,1));
-                map<string,unsigned long>::iterator seeker = arguments.find(type);
-                if(seeker != arguments.end())
-                {
-                  //Argument exists
-                  argument_pos = seeker->second;
-                  //Do the rest
-                }
-                else
-                {
-                  printf("ERROR: A non-polymorphic or nonexistent argument was provided to a typecase form.");
-                  Unwind();
-                }
-              }
-              //Iterate over the cases
-              for(i = 2; i < length(current); i++)
-              {
-                if(isatom(nth(current,i)))
-                {
-                  printf("ERROR: An atom was found in a typecase form.");
-                  Unwind();
-                }
-                else
-                {
-                  if(islist(car(nth(current,i))))
-                  {
-                    printf("ERROR: The first element in every pair of typecase form must be a symbolic atom.");
-                    Unwind();
-                  }
-                  else if(analyze(print(car(nth(current,i)))) == Symbol)
-                  {
-                    printf("ERROR: The first element in every pair of typecase form must be a symbolic atom.");
-                    Unwind();
-                  }
-                  else
-                  {
-                    string replacement_type = print(car(nth(current,i)));
-                    Form* replacement_code = cdr(nth(current,i));
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    else
-      return print(form);
-  }*/
+  string removeReturn(string in)
+  { return string(in,in.find("(")-1); }
   
   string defineFunction(Form* form, fnType fn_type, bool inlining)
   {
@@ -245,57 +141,48 @@
               SymbolTable[ScopeDepth][argname].sym = type;
               SymbolTable[ScopeDepth][argname].constant = false;
               SymbolTable[ScopeDepth][argname].global = false;
+              newfn.fn_ptr_type += type + ",";
             }
           }
         }
         else
         { 
           if(val(current_arg) == "...")
+          {
             fn_args[gensym()] = "...";
-          //Handle Dynamic args
+            newfn.fn_ptr_type += "...,";
+          }
         }
       }
     }
     newfn.arguments = fn_args;
-    newfn.nargs = ((unsigned)fn_args.size())/2;
+    newfn.nargs = fn_args.size();
+    newfn.fn_ptr_type = ((nth(form,args_pos) == NULL)?newfn.fn_ptr_type:cutlast(newfn.fn_ptr_type)) + ")*";
+    string rem = removeReturn(newfn.fn_ptr_type);
     string tmp_code;
     map<string,MetaFunction>::iterator seeker = FunctionTable.find(fn_name);
     if(seeker != FunctionTable.end())
     {
       for(unsigned int i = 0; i < seeker->second.versions.size(); i++)
       {
-        if(newfn.nargs == 0 && seeker->second.versions[i].nargs == 0)
-        {
-          printf("ERROR: A function with the same prototype has already been defined.");
-          Unwind();
-        }
-        else if(fn_args == seeker->second.versions[i].arguments /*&& (fn_ret_type == seeker->second.versions[i].ret_type)*/) //Functions may not yet be differentiated by return type
-        {
-          printf("ERROR: A function with the same prototype has already been defined.");
-          Unwind();
-        }
+        if(removeReturn(seeker->second.versions[i].fn_ptr_type) == rem) //Compare prototypes without comparing return types
+          error(form,"A function with the same prototype (",cutlast(rem),") has already been defined.");
       }
       seeker->second.versions.push_back(newfn);
-      string arg_code;
-      string arg_name, base_name;
     }
     else
     {
       MetaFunction new_metafn;
       new_metafn.versions.push_back(newfn);
       FunctionTable[fn_name] = new_metafn;
-      string arg_code;
-      string arg_name, base_name;
     }
     string arg_name, base_name, arg_code, out;
-    for(map<string,string>::iterator i = fn_args.begin(); i != fn_args.end(); i++)
+    for(map<string,string>::reverse_iterator i = fn_args.rbegin(); i != fn_args.rend(); i++)
     {
       if(i->second == "...")
       {
-        cout << "HWREP DERP VARARGS" << endl;
         arg_code += "...,";
-        if(i == fn_args.end()--)
-          error(form,"The varargs argument (...) must be last in an argument list.");
+        //TODO: Check that it's the last one on the list
       }
       else
       {
@@ -310,16 +197,11 @@
     }
     string processed_name = "@" + fn_name + ((seeker != FunctionTable.end()) ? to_string(seeker->second.versions.size()-1) : "0");
     tmp_code = (string)"define " + (newfn.fastcc? "fastcc ":"ccc ") + newfn.ret_type + " " + processed_name
-        + "(" + ((length(nth(form,args_pos)) == 1) ? cutlast(arg_code) : cutlast(arg_code)) + ")\n{\n" + tmp_code;
+        + "(" + cutlast(arg_code) + ")\n{\n" + tmp_code;
     //Compile the code
     for(unsigned long i = body_starting_pos; i < length(form);i++)
-    {
       tmp_code += emitCode(nth(form,i));
-    }
-    fn_code = tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}";;
-    push(fn_code);
-    //Create a pointer to the function
-    newfn.fn_ptr_type = ((nth(form,args_pos) == NULL)?newfn.fn_ptr_type:cutlast(newfn.fn_ptr_type)) + ")*";
+    push(tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}");
     out += allocate(get_unique_tmp(),newfn.fn_ptr_type);
     out += store(newfn.fn_ptr_type,processed_name,get_current_tmp());
     out += load(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,get_current_tmp());
@@ -334,12 +216,9 @@
   
   string callFunction(string func, Form* code)
   {
-    if(analyze(func) != Symbol)
-    {
-      printf("ERROR: A non-symbolic atom was used as a function name.");
-      Unwind();
-    }
-    string callcode;
+    /*if(analyze(func) != Symbol)
+      error(code,"A non-symbolic atom was used as a function name");
+    string callcode, arg_code, clean_fn_ptr;
     for(unsigned long i = 0; i < Generics.size(); i++)
     {
       if(Generics[i].first == func)
@@ -358,52 +237,113 @@
       if(code != NULL)
       {
         Form* curr;
-        for(unsigned long i = 0; i < length(code); i++)
+        for(unsigned long i = 1; i < length(code); i++)
         {
           curr = nth(code,i);
           callcode += emitCode(curr);
-          arguments.push_back(res_type(get_current_res()));
+          arguments.push_back(latest_type());
           res_nums.push_back(res_version);
         }
       }
       for(unsigned long i = 0; i < seeker->second.versions.size(); i++)
       {
-        if(seeker->second.versions[i].arguments.size() == arguments.size())
+        bool is_varargs = false;
+        map<string,string>::iterator arg_iterator = seeker->second.versions[i].arguments.end();
+        if((--arg_iterator)->second == "...")
+          is_varargs = true;
+        if(!is_varargs && (seeker->second.versions[i].arguments.size() != arguments.size()))
+          goto breakout;
+        if(is_varargs && (seeker->second.versions[i].arguments.size() > arguments.size()))
+          goto breakout;
+        arg_iterator = seeker->second.versions[i].arguments.begin();
+        unsigned long j = 0;
+        if(!is_varargs)
         {
-          map<string,string>::iterator arg_iterator = seeker->second.versions[i].arguments.begin();
-          for(unsigned long j = 0; j < arguments.size(); j++)
+          for(; j < arguments.size(); j++)
           {
             if(arguments[j] != arg_iterator->second)
-            {
-              break;
-            }
+              goto breakout; //Normal function, argument mismatch
+            else
+              arg_code += arguments[j] + " " + get_res(res_nums[j]) + ",";
             //We don't have to check that the iterator is != arguments.end()
             //because that is done implicitly by the size() == arguments.size() check
+            //This only goes up to arguments.size(), so varargs are implicitly in
             arg_iterator++;
           }
-          //Found a matching function
-          callcode += get_unique_res(seeker->second.versions[i].ret_type);
-          callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
-          callcode += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
-          callcode += seeker->second.versions[i].ret_type;
-          //Clean the function pointer type to remove the return type
-          string clean_fn_ptr = seeker->second.versions[i].fn_ptr_type;
-          clean_fn_ptr = string(clean_fn_ptr,clean_fn_ptr.find('(')+1);
-          callcode += clean_fn_ptr; 
-          callcode += " @" + func + to_string(i) + (arguments.empty() ? "()" :"(");
-          for(arg_iterator = seeker->second.versions[i].arguments.begin();
-              arg_iterator != seeker->second.versions[i].arguments.end();
-          arg_iterator++)
-          {
-            callcode += arg_iterator->second + " ";
-            callcode += get_res(res_nums[0]) + ",";
-            res_nums.erase(res_nums.begin());
-          }
-          callcode = (arguments.empty() ? callcode : (cutlast(callcode) + ")"));
         }
+        else
+        {
+          //We just iterate over the checked-against function's arguments, up until just before "..."
+          //to see if there's a type mismatch before varargs
+          for(; arg_iterator != --(seeker->second.versions[i].arguments.end()); arg_iterator++)
+          {
+            if(arguments[j] != arg_iterator->second)
+              goto breakout;
+            else
+              arg_code += arguments[j] + " " + get_res(res_nums[j]) + ",";
+            j++;
+          }
+          //Now we iterate from j forward until the end of the arguments, checking nothing
+          for(; j < arguments.size(); j++)
+            arg_code += arguments[j] + " " + get_res(res_nums[j]) + ",";
+        }
+        //Found a matching function
+        callcode += get_unique_res(seeker->second.versions[i].ret_type);
+        callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
+        callcode += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
+        callcode += seeker->second.versions[i].ret_type;
+        //Clean the function pointer type to remove the return type
+        clean_fn_ptr = seeker->second.versions[i].fn_ptr_type;
+        clean_fn_ptr = string(clean_fn_ptr,clean_fn_ptr.find('(')+1);
+        callcode += clean_fn_ptr; 
+        callcode += " @" + func + to_string(i) + (arguments.empty() ? "()" : ("(" + cutlast(arg_code))) + ")";
+        return callcode;
+        breakout:
+        callcode = ""; arg_code = ""; clean_fn_ptr = ""; //Clean up for the next iteration
       }
     }
-    else if(seeker == FunctionTable.end())
-      error(code,"Couldn't find the function '",func,"'.");
-    return callcode;
+    error(code,"Couldn't find the function '",func,"'.");
+    return "";*/
+  }
+  
+  bool isFunctionPointer(string in)
+  {
+    return true;
+    //TODO
+  }
+  
+  string cleanPointer(string in)
+  {
+    string arglist = cutlast(cutlast(string(in,in.find('('))));
+    return arglist;
+  }
+  
+  string callFunction(Form* in)
+  {
+    //First of all: What does the function look like? Get a "partial function pointer": put the argument types into a list
+    string pointer, out;
+    if(cdr(in) == NULL)
+      pointer = "()";
+    else
+    {
+      pointer = "(";
+      for(unsigned long i = 1; i < length(in); i++)
+      {
+        out += emitCode(nth(in,i));
+        pointer += latest_type() + ",";
+      }
+      pointer = cutlast(pointer) + ")";
+    }
+    if(isatom(car(in)))
+    {
+      //Calling a function by name
+      //First, find the name in the table
+      //Name found, now we compare our pointer to each version's pointer sans the return type
+      //Name not found, now let's try variables
+    }
+    else if(islist(car(in)))
+    {
+      //Emit the for the form. Is it a function pointer?
+    }
+    return out;
   }
