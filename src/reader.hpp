@@ -54,30 +54,23 @@
       return word;
   }
   
-  string tryPrefixOrPostfix(string word, bool pre)
+  string tryPrefixOrPostfix(string word)
   {
     if(word.length() < 3)
       return word;
     char replacement;
-    if(pre)
-      replacement = word[0];
-    else
-      replacement = word[word.length()-1];
-    map<char,string>::iterator seeker = (pre?Prefixes:Postfixes).find(replacement);
-    if(seeker != (pre?Prefixes:Postfixes).end()) //Found, apply
+    string out;
+    replacement = word[0];
+    map<char,string>::iterator seeker = Prefixes.find(replacement);
+    if(seeker != Prefixes.end())
     {
-      if(pre)
-      {
-        word = cutfirst(word);
-        word = seeker->second+word;
-      }
-      else
-      {
-        word = cutlast(word);
-        word = word+seeker->second;
-      }
+      out = seeker->second+cutfirst(word);
+      replacement = word[word.length()-1];
+      map<char,string>::iterator seeker = Postfixes.find(replacement);
+      if(seeker != Postfixes.end())
+        out = cutlast(out)+seeker->second;
     }
-    return word;
+    return out;
   }
   
   inline Form* cons(Form* first, Form* second)
@@ -356,8 +349,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
   
   Form* expandEverything(Form* in)
   {
-    return expand(expand(expand(in,expandMacros),expandPrefixes),expandPostfixes);
-    //return in;
+    //return expand(expand(expand(in,expandMacros),expandPrefixes),expandPostfixes);
+    return in;
   }
   
   Form* read(FILE* in)

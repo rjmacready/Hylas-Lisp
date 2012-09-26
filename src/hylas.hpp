@@ -118,9 +118,11 @@ namespace Hylas
   
   struct Variable
   {
-    string sym;
+    string type;
+    unsigned long address = -1;
     bool constant;
     bool global;
+    bool lvalue;
   };
   
   typedef map<string,Variable> Scope;
@@ -169,7 +171,16 @@ namespace Hylas
   string get_unique_res(string type)
   {
     string vnum = to_string(++res_version);
-    SymbolTable[ScopeDepth]["%res.version" + vnum].sym = type;
+    SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
+    return "%res.version" + vnum;
+  }
+  
+  string get_unique_res_address(string type, unsigned long address)
+  {
+    string vnum = to_string(++res_version);
+    SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
+    SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
+    SymbolTable[ScopeDepth]["%res.version" + vnum].lvalue = true;
     return "%res.version" + vnum;
   }
   
@@ -181,7 +192,7 @@ namespace Hylas
     Variable* tmp = lookup(name);
     if(tmp == NULL)
     { printf("Can't find symbol."); Unwind(); }
-    return tmp->sym;
+    return tmp->type;
   }
   
   inline string get_current_res(){ return get_res(res_version);}
@@ -219,12 +230,15 @@ namespace Hylas
   inline string latest_type()
   { return res_type(get_current_res()); }
   
+  inline string constant(string destination, string type, string value)
+  { return destination + " = select i1 true, " + type + " " + value + ", " + type + " " value + "\n"; }
+  
   void dump_scope(unsigned long s)
   {
     for(map<string,Variable>::iterator i = SymbolTable[s].begin();
         i != SymbolTable[s].end(); i++)
     {
-      printf("\n %s : %s",i->first.c_str(),i->second.sym.c_str());
+      printf("\n %s : %s",i->first.c_str(),i->second.type.c_str());
     }
   }
   
@@ -251,41 +265,30 @@ namespace Hylas
       {
         case BooleanTrue:
         {
-          out = allocate(get_unique_tmp(),"i1");
-          out += store("i1","1",get_current_tmp());
-          out += load(get_unique_res("i1"),"i1",get_current_tmp());
+          out = constant(get_unique_res("i1"),"i1","true");
           break;
         }
         case BooleanFalse:
         {
-          out = allocate(get_unique_tmp(),"i1");
-          out += store("i1","0",get_current_tmp());
-          out += load(get_unique_res("i1"),"i1",get_current_tmp());
+          out = constant(get_unique_res("i1"),"i1","false");
           break;
         }
         case Integer:
         {
-          out = allocate(get_unique_tmp(),"i64");
-          out += store("i64",val(form),get_current_tmp());
-          out += load(get_unique_res("i64"),"i64",get_current_tmp());
+          out = constant(get_unique_res("i64"),"i64",val(form));
           break;
         }
         case Character:
         {
           string c = string(val(form),1,val(form).length()-2);
           string address = "@str" + to_string<unsigned long>(++string_version);
-          out = allocate(get_unique_tmp(),"i8");
           push(address + " = global [2 x i8] c\"" + c + "\0\0\"");
-          out += get_unique_tmp() + " = load i8* getelementptr inbounds ([2 x i8]* " + address + ", i32 0, i64 0)";
-          out += store("i8",get_current_tmp(),get_tmp(tmp_version-1));
-          out += load(get_unique_res("i8"),"i8",get_current_tmp());
+          out += get_unique_res("i8") + " = load i8* getelementptr inbounds ([2 x i8]* " + address + ", i32 0, i64 0)";
           break;
         }
         case Real:
         {
-          out = allocate(get_unique_tmp(),"double");
-          out += store("double",val(form),get_current_tmp());
-          out += load(get_unique_res("double"),"double",get_current_tmp());
+          out = constant(get_unique_res("double"),"double",val(form));
           break;
         }
         case Symbol:
@@ -313,14 +316,14 @@ namespace Hylas
     }
     else
     {
-      if(islist(car(form)))
-        error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
-      string func = val(car(form));
-      map<string,hFuncPtr>::iterator seeker = Core.find(func);
-      if(seeker != Core.end())
-        out = seeker->second(form);
-      else
-        out = callFunction(func,form);
+      out = callFunction(func,false);
+      if(out == "NOFOUND")
+      {
+        string func = val(car(form));
+        map<string,hFuncPtr>::iterator seeker = Core.find(func); // We know it will be an atom because callFunction tests for that
+        if(seeker != Core.end())
+          out = seeker->second(form);
+      }
     }
     return out+"\n";
   }
@@ -335,17 +338,24 @@ namespace Hylas
       out = emitCode(form);
     else
     {
-      if(islist(car(form)))
-        error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
-      string func = val(car(form));
-      map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
-      if(seeker != TopLevel.end())
+      out = callFunction(func,false);
+      if(out == "NOFOUND")
       {
-        push(seeker->second(form));
-        out += emitCode(readString("true"));
+        string name = val(car(form));
+        map<string,hFuncPtr>::iterator seeker = TopLevel.find(name); // We know it will be an atom because callFunction tests for that
+        if(seeker != TopLevel.end())
+          out = seeker->second(form);
+        else
+        {
+          seeker = Core.find(name);
+          if(seeker != Core.end())
+            out = seeker->second(form);
+          else
+          {
+            error("No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype PRINT THIS.");
+          }
+        }
       }
-      else
-        out = emitCode(form);
     }
     for(unsigned long i = 0; i < CodeStack.size(); i++)
       tmp += CodeStack[i] + "\n";
@@ -381,6 +391,7 @@ namespace Hylas
     init_stdlib();
     init_types();
     init_optimizer();
+    srand(time(NULL)); //For the color generator
     //Engine =  EngineBuilder(Program).create();
   }
   

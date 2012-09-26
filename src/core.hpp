@@ -12,17 +12,30 @@
     Variable* tmp = lookup(varname);
     if(tmp != NULL)
       error(form,"Symbol already defined.");
-    string out = emitCode(nth(form,2));
-    string type = latest_type();
-    string fullname = (tmp->global?"@":"%")+varname;
-    if(tmp->global)
-      push(fullname + " = global " + type + " zeroinitializer");
+    string type;
+    string out;
+    if(typeonly)
+      type = printTypeSignature(nth(form,2));
     else
+    {
+      emitCode(nth(form,2));
+      type = latest_type();
+    }
+    string fullname = (global?"@":"%")+varname;
+    if(global && !typeonly)
+      push(fullname + " = global " + type + " zeroinitializer");
+    else if(!global && !typeonly)
       out += allocate(fullname,latest_type());
-    out += store(type,get_current_res(),fullname);
-    SymbolTable[ScopeDepth][varname].sym = type;
-    SymbolTable[ScopeDepth][varname].constant = false;
-    SymbolTable[ScopeDepth][varname].global = false;
+    if(!typeonly)
+    {
+      out += store(type,get_current_res(),fullname);
+      SymbolTable[ScopeDepth][varname].sym = type;
+      SymbolTable[ScopeDepth][varname].constant = false;
+      SymbolTable[ScopeDepth][varname].global = global;
+      SymbolTable[ScopeDepth][varname].lvalue = true;
+    }
+    else
+      out = constant(get_unique_res("i1"),"i1","true");
     return out;
   }
   
@@ -192,15 +205,14 @@
     }
     //Emit code
     out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_current_res() + ", i32 0, i32" + member_loc + "\n";
-    out += load(get_unique_res(member_type),member_type,get_current_tmp());
+    out += load(get_unique_res_address(member_type,tmp_version),member_type,get_current_tmp());
     return out;
   }
   
   string simple_if(Form* form)
   {
     string out = emitCode(nth(form,1));
-    out += allocate(get_unique_tmp(),"i1");
-    unsigned long address = tmp_version;
+    unsigned long cond_address = res_version;
     if(latest_type() != "i1")
       error(form,"The test (Second argument) of an (if) form must evaluate to a boolean (i1) value.");
     else
@@ -209,23 +221,21 @@
     out += ", label " + get_unique_label() + "\n";
     out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,2));
-    out += store("i1","true",get_tmp(address));
     out += "br label " + get_label(label_version+1) + "\n";
     out += functional_label(get_label(label_version));
     out += emitCode(nth(form,3));
-    out += store("i1","false",get_tmp(address));
     out += "br label " + get_label(label_version+1) + "\n";
     out += functional_label(get_unique_label());
-    out += load(get_unique_res("i1"),"i1",get_tmp(address));
+    out += get_unique_res("i8") + " = select i1 " + get_res(cond_address) + ", i1 true, i1 false\n";
     return out;
   }
   
   string flow(Form* form)
   {
     string out = emitCode(nth(form,1));
-    string true_branch_type, false_branch_type;
-    string address = gensym();
-    string tmp;
+    string true_branch_type;
+    unsigned long cond_address, true_address, false_address;
+    cond_address = res_version;
     if(latest_type() != "i1")
       error(form,"The test (Second argument) of a (flow) form must evaluate to a boolean (i1) value.");
     else
@@ -235,20 +245,20 @@
     out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,2));
     true_branch_type = latest_type();
-    out += store(true_branch_type,get_current_res(),address);
+    true_address = res_version;
+    //out += store(true_branch_type,get_current_res(),address);
     out += "br label " + get_unique_label() + "\n";
     out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,3));
-    false_branch_type = latest_type();
-    out += store(true_branch_type,get_current_res(),address);
+    false_address = res_version;
+    //out += store(true_branch_type,get_current_res(),address);
     out += "br label " + get_label(label_version) + "\n";
     out += functional_label(get_label(label_version));
-    if(true_branch_type != false_branch_type)
+    if(true_branch_type != latest_type())
       error(form,"Both branches of a (flow) statement must evaluate to the same type. Here, the true branch returns a '",
-            true_branch_type,"', while the false branch returns a '",false_branch_type,"'.");
+            true_branch_type,"', while the false branch returns a '",latest_type(),"'.");
     else
-    tmp = allocate(address,true_branch_type);
-    out += load(get_unique_res(true_branch_type),true_branch_type,address);
+      out += get_unique_res(true_branch_type) + " = select i1 " + get_res(cond_address) + ", " + true_branch_type + " " + get_res(true_address) + ", " + true_branch_type + " " + get_res(false_address) + "\n";
     return tmp+out;
   }
   
@@ -318,7 +328,7 @@
   
   string direct_call(Form* form)
   {
-    string out;
+    /*string out;
     string name = val(nth(form,1));
     string ret_type = val(nth(form,2));
     string c_conv = val(nth(form,3));
@@ -339,7 +349,7 @@
     out = cutlast(out) + ")\n";
     out += store(ret_type,get_current_tmp(),get_tmp(tmp_version-1));
     out += load(get_unique_res(ret_type),ret_type,get_tmp(tmp_version-1));
-    return out;
+    return out;*/
   }
   
   string construct(Form* form)
@@ -508,12 +518,12 @@
     string out;
     //Code for address
     out += emitCode(nth(in,1));
-    long address_location = res_version;
+    unsigned long address_location = res_version;
     //Code for array
     out += emitCode(nth(in,2));
     out += get_unique_tmp() + " = getelementptr inbounds " + latest_type() + "* " + get_current_res()
         + ", i64 " + get_res(address_location);
-    out += load(get_unique_res(cutlast(latest_type())),latest_type(),get_current_tmp());
+    out += load(get_unique_res_address(cutlast(latest_type()),tmp_version),latest_type(),get_current_tmp());
     return out;
   }
   
@@ -522,12 +532,13 @@
     //%x = allocate [type]
     string type = printTypeSignature(nth(in,1));
     string out = allocate(get_unique_tmp(),type);
-    out += allocate(get_unique_res(type+"*"),type);
+    out += constant(get_unique_res(type+"*"),type,get_current_tmp());
     return out;
   }
   
   string mem_store(Form* in)
   {
+    //(store [value] [address])
     //%x = store [type] [value], [type]* [address]
     string out;
     //emit value
@@ -539,6 +550,7 @@
     if(cutlast(latest_type()) != type)
       error(in,"The type of the value (",type,") does not equal the type of the address (",latest_type(),").");
     out += store(type,get_res(version),get_current_res());
+    out += constant(get_unique_res(type),type,get_res(version));
     return out;
   }
   
@@ -557,8 +569,7 @@
   
   string pointer(Form* in)
   {
-    string out = emitCode(nth(in,1));
-    return out + get_unique_res(latest_type()+"*") + " = " + get_current_tmp();
+    //Does that input have an address? That is, is it an lvalue?
   }
   
   string toplevel_asm(Form* in)
@@ -571,14 +582,13 @@
   string inline_asm(Form* in)
   {
     string out;
-    string type = val(nth(in,1));
+    string type = printTypeSignature(nth(in,1));
     string dialect = val(nth(in,2));
     string code = print(cdr(cdr(cdr(in))));
     if(dialect != "Intel" && dialect != "ATT")
       error(in,"Unknown assembly dialect: Only 'Intel' and 'ATT' are supported, '"
       ,dialect,"' was given.");
-    out = allocate(get_unique_tmp(),type);
-    out += get_unique_tmp() + " = call " + type + " asm "
+    out += get_unique_res(type) + " = call " + type + " asm "
         + ((dialect == "Intel" ? "inteldailect" : "")) + " \"" + code + "\", ""()";
     return out;
   }
@@ -710,9 +720,12 @@
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("char","i8");
+    addWordMacro("byte","i8");
+    addWordMacro("octet","i8");
     addWordMacro("short","i16");
     addWordMacro("int","i32");
     addWordMacro("long","i64");
+    addWordMacro("octet","i8");
     //Allowed comparisons for numerical operations
     allowedIntComparisons = {"eq", "ne", "ugt", "uge", "ult", "ule", "sgt"
                              "sge", "slt", "sle"};

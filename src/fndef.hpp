@@ -138,9 +138,10 @@
             {
               string type = printTypeSignature(nth(current_arg,1));
               fn_args[argname] = type;
-              SymbolTable[ScopeDepth][argname].sym = type;
+              SymbolTable[ScopeDepth][argname].type = type;
               SymbolTable[ScopeDepth][argname].constant = false;
               SymbolTable[ScopeDepth][argname].global = false;
+              SymbolTable[ScopeDepth][argname].lvalue = true;
               newfn.fn_ptr_type += type + ",";
             }
           }
@@ -168,10 +169,12 @@
         if(removeReturn(seeker->second.versions[i].fn_ptr_type) == rem) //Compare prototypes without comparing return types
           error(form,"A function with the same prototype (",cutlast(rem),") has already been defined.");
       }
+      newfn.name = fn_name + to_string(seeker->second.versions.size()-1);
       seeker->second.versions.push_back(newfn);
     }
     else
     {
+      newfn.name = fn_name + "0";
       MetaFunction new_metafn;
       new_metafn.versions.push_back(newfn);
       FunctionTable[fn_name] = new_metafn;
@@ -202,9 +205,7 @@
     for(unsigned long i = body_starting_pos; i < length(form);i++)
       tmp_code += emitCode(nth(form,i));
     push(tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}");
-    out += allocate(get_unique_tmp(),newfn.fn_ptr_type);
-    out += store(newfn.fn_ptr_type,processed_name,get_current_tmp());
-    out += load(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,get_current_tmp());
+    out += constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,processed_name);
     return out;
   }
   
@@ -214,9 +215,9 @@
     return "";
   }
   
-  string callFunction(string func, Form* code)
+  /*string callFunction(string func, Form* code)
   {
-    /*if(analyze(func) != Symbol)
+    if(analyze(func) != Symbol)
       error(code,"A non-symbolic atom was used as a function name");
     string callcode, arg_code, clean_fn_ptr;
     for(unsigned long i = 0; i < Generics.size(); i++)
@@ -304,24 +305,28 @@
     }
     error(code,"Couldn't find the function '",func,"'.");
     return "";*/
-  }
+  }*/
   
   bool isFunctionPointer(string in)
   {
-    return true;
-    //TODO
+    return ((in.find('(') != string::npos != in.find(')')) &&
+            (in.find('(') < in.find(')')) &&
+            (in[in.length()-1] == '*'));
+    //TODO some other tests are needed
   }
   
   string cleanPointer(string in)
   {
-    string arglist = cutlast(cutlast(string(in,in.find('('))));
+    //i32(i8*,i64)* -> (i8*,i64)
+    string arglist = cutlast(string(in,in.find('(')));
     return arglist;
   }
   
-  string callFunction(Form* in)
+  string callFunction(Form* in, bool report_error=true)
   {
     //First of all: What does the function look like? Get a "partial function pointer": put the argument types into a list
     string pointer, out;
+    string arguments = "(";
     if(cdr(in) == NULL)
       pointer = "()";
     else
@@ -331,19 +336,76 @@
       {
         out += emitCode(nth(in,i));
         pointer += latest_type() + ",";
+        arguments += latest_type() + " " + get_current_res() + ",";
       }
       pointer = cutlast(pointer) + ")";
+      arguments = cutlast(arguments) + ")";
     }
     if(isatom(car(in)))
     {
       //Calling a function by name
       //First, find the name in the table
-      //Name found, now we compare our pointer to each version's pointer sans the return type
-      //Name not found, now let's try variables
+      string name = val(car(func));
+      map<string,MetaFunction>::iterator seeker = FunctionTable.find(name);
+      if(seeker != FunctionTable.end())
+      {
+        //Name found, now we compare our pointer to each version's pointer sans the return type
+        for(unsigned long i = 0; i < seeker->second.versions.size(); i++)
+        {
+          if(pointer == cleanPointer(seeker->second.versions[i].fn_ptr_type))
+          {
+            string ret_type = seeker->second.versions[i].ret_type;
+            //Found our match, emit code to call the function
+            out += get_unique_res(seeker->second.version[i].ret_type) + " = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
+            out += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
+            out += ret_type; + " ";
+            out += pointer + " @"
+                + seeker->second.versions[i].name;
+            out += arguments + "\n";
+          }
+        }
+      }
+      else
+      {
+        //Name not found in the function table, now let's try variables
+        for(long i = ScopeDepth; i != -1; i--)
+        {
+          map<string,Variable>::iterator seeker = SymbolTable[i].find(name);
+          if(seeker != SymbolTable[i].end())
+          {
+            if(isFunctionPointer(seeker->second.type))
+            {
+              if(cleanPointer(seeker->second.type) == pointer)
+              {
+                //Found our match, emit code to call the pointer
+                string ret_type = string(seeker->second.type,0,seeker->second.type.find('('));
+                out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + arguments + "\n";
+                //We don't provide the calling convention
+              }
+            }
+          }
+        }
+      }
+      if(report_error)
+        error("No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype ",pointer,".");
+      else
+        return "NOFOUND";
     }
     else if(islist(car(in)))
     {
-      //Emit the for the form. Is it a function pointer?
+      //Emit code for the for the form. Is it a function pointer?
+      out += emitCode(nth(in,0));
+      if(isFunctionPointer(latest_type()))
+      {
+        if(cleanPointer(latest_type()) == pointer)
+        {
+          string ret_type = string(latest_type(),0,latest_type().find('('));
+          out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + arguments + "\n";
+        }
+      }
+      else
+        error("Tried to compile the first element of the form '",in,"' to see if it was a callable function pointer, but an object of type '",latest_type(),"' was found.");
+        //This will happen regardless of report_error. It has to, since no Core functions use a list as their "name"
     }
     return out;
   }
