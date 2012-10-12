@@ -1,0 +1,6 @@
+(prefix '<' "(array ")
+(word "word" "(array ")
+(postfix '>' ")")
+(word ">" ")")
+
+(prefix '.' "(access ")

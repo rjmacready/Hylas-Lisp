@@ -141,7 +141,7 @@
               SymbolTable[ScopeDepth][argname].type = type;
               SymbolTable[ScopeDepth][argname].constant = false;
               SymbolTable[ScopeDepth][argname].global = false;
-              SymbolTable[ScopeDepth][argname].lvalue = true;
+              SymbolTable[ScopeDepth][argname].regtype = LValue;
               newfn.fn_ptr_type += type + ",";
             }
           }
@@ -195,8 +195,6 @@
         tmp_code += allocate(arg_name,i->second);
         tmp_code += store(i->second,base_name,arg_name);
       }
-      //Put the type in the fn pointer
-      newfn.fn_ptr_type += i->second + ",";
     }
     string processed_name = "@" + fn_name + ((seeker != FunctionTable.end()) ? to_string(seeker->second.versions.size()-1) : "0");
     tmp_code = (string)"define " + (newfn.fastcc? "fastcc ":"ccc ") + newfn.ret_type + " " + processed_name
@@ -212,7 +210,7 @@
   string callGeneric(long gen_pos, Form* code)
   {
     //Not implemented yet
-    return "";
+    return print(code) + to_string(gen_pos);
   }
   
   /*string callFunction(string func, Form* code)
@@ -304,12 +302,13 @@
       }
     }
     error(code,"Couldn't find the function '",func,"'.");
-    return "";*/
+    return "";
   }*/
   
   bool isFunctionPointer(string in)
   {
-    return ((in.find('(') != string::npos != in.find(')')) &&
+    return ((in.find('(') != string::npos) &&
+            (in.find(')') != string::npos) &&
             (in.find('(') < in.find(')')) &&
             (in[in.length()-1] == '*'));
     //TODO some other tests are needed
@@ -322,7 +321,7 @@
     return arglist;
   }
   
-  string callFunction(Form* in, bool report_error=true)
+  string callFunction(Form* in)
   {
     //First of all: What does the function look like? Get a "partial function pointer": put the argument types into a list
     string pointer, out;
@@ -345,23 +344,26 @@
     {
       //Calling a function by name
       //First, find the name in the table
-      string name = val(car(func));
+      string name = val(car(in));
       map<string,MetaFunction>::iterator seeker = FunctionTable.find(name);
       if(seeker != FunctionTable.end())
       {
         //Name found, now we compare our pointer to each version's pointer sans the return type
         for(unsigned long i = 0; i < seeker->second.versions.size(); i++)
         {
+          cout << "Pointer: " << pointer << endl;
+          cout << "Pointer compared: " << cleanPointer(seeker->second.versions[i].fn_ptr_type) << endl;
           if(pointer == cleanPointer(seeker->second.versions[i].fn_ptr_type))
           {
             string ret_type = seeker->second.versions[i].ret_type;
             //Found our match, emit code to call the function
-            out += get_unique_res(seeker->second.version[i].ret_type) + " = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
+            out += get_unique_res(seeker->second.versions[i].ret_type) + " = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
             out += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
-            out += ret_type; + " ";
-            out += pointer + " @"
+            out += ret_type + " ";
+            out += pointer + "* @"
                 + seeker->second.versions[i].name;
-            out += arguments + "\n";
+            out += arguments;
+            return out;
           }
         }
       }
@@ -379,17 +381,15 @@
               {
                 //Found our match, emit code to call the pointer
                 string ret_type = string(seeker->second.type,0,seeker->second.type.find('('));
-                out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + arguments + "\n";
+                out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + arguments;
                 //We don't provide the calling convention
+                return out;
               }
             }
           }
         }
       }
-      if(report_error)
-        error("No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype ",pointer,".");
-      else
-        return "NOFOUND";
+      error(in,"No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype ",pointer,".");
     }
     else if(islist(car(in)))
     {
@@ -400,12 +400,11 @@
         if(cleanPointer(latest_type()) == pointer)
         {
           string ret_type = string(latest_type(),0,latest_type().find('('));
-          out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + arguments + "\n";
+          out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + "* " + get_current_res() + arguments;
+          return out;
         }
       }
       else
-        error("Tried to compile the first element of the form '",in,"' to see if it was a callable function pointer, but an object of type '",latest_type(),"' was found.");
-        //This will happen regardless of report_error. It has to, since no Core functions use a list as their "name"
+        error(in,"Tried to compile the first element of the form '",in,"' to see if it was a callable function pointer, but an object of type '",latest_type(),"' was found.");
     }
-    return out;
   }

@@ -308,8 +308,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
   }
   
   #define expandMacros    0
-  #define expandPrefixes  1
-  #define expandPostfixes 2
+  #define expandFixes  1
   
   Form* expand(Form* in, unsigned char order)
   {
@@ -338,10 +337,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
       string tmp;
       if(order == expandMacros)
         tmp = getMacro(val(in));
-      if(order == expandPrefixes)
-        tmp = tryPrefixOrPostfix(val(in),true);
-      if(order == expandPostfixes)
-        tmp = tryPrefixOrPostfix(val(in),false);
+      if(order == expandFixes)
+        tmp = tryPrefixOrPostfix(val(in));
       return readString(tmp);
     }
     return in;
@@ -402,7 +399,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     float p = v*(1-s);
     float q = v*(1-f*s);
     float t = v*(1-((1-f)*s));
-    float r,g,b;
+    float r=0,g=0,b=0;
     if(h_i == 0)
     {
       r=v;

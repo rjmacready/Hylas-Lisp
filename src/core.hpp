@@ -8,6 +8,7 @@
   
   string def(Form* form, bool global, bool typeonly)
   {
+    cout << print(form) << endl;
     string varname = val(nth(form,1));
     Variable* tmp = lookup(varname);
     if(tmp != NULL)
@@ -15,8 +16,10 @@
     string type;
     string out;
     if(typeonly)
+    {
       type = printTypeSignature(nth(form,2));
-    else
+    }
+    else if(!typeonly)
     {
       emitCode(nth(form,2));
       type = latest_type();
@@ -29,10 +32,11 @@
     if(!typeonly)
     {
       out += store(type,get_current_res(),fullname);
-      SymbolTable[ScopeDepth][varname].sym = type;
+      SymbolTable[ScopeDepth][varname].type = type;
       SymbolTable[ScopeDepth][varname].constant = false;
       SymbolTable[ScopeDepth][varname].global = global;
-      SymbolTable[ScopeDepth][varname].lvalue = true;
+      SymbolTable[ScopeDepth][varname].address = tmp_version;
+      SymbolTable[ScopeDepth][varname].regtype = SymbolicRegister;
     }
     else
       out = constant(get_unique_res("i1"),"i1","true");
@@ -222,11 +226,12 @@
     out += functional_label(get_label(label_version-1));
     out += emitCode(nth(form,2));
     out += "br label " + get_label(label_version+1) + "\n";
-    out += functional_label(get_label(label_version));
+    out += functional_label(get_current_label());
     out += emitCode(nth(form,3));
     out += "br label " + get_label(label_version+1) + "\n";
     out += functional_label(get_unique_label());
-    out += get_unique_res("i8") + " = select i1 " + get_res(cond_address) + ", i1 true, i1 false\n";
+    out += get_unique_res("i1") + " = phi i1 [true," + get_label(label_version-2)
+        + "],[false," + get_label(label_version-1) + "]";    
     return out;
   }
   
@@ -258,8 +263,10 @@
       error(form,"Both branches of a (flow) statement must evaluate to the same type. Here, the true branch returns a '",
             true_branch_type,"', while the false branch returns a '",latest_type(),"'.");
     else
-      out += get_unique_res(true_branch_type) + " = select i1 " + get_res(cond_address) + ", " + true_branch_type + " " + get_res(true_address) + ", " + true_branch_type + " " + get_res(false_address) + "\n";
-    return tmp+out;
+      out += get_unique_res(true_branch_type) + " = phi " + true_branch_type + " ["
+          + get_res(true_address) + "," + get_label(label_version-2) + "],["
+          + get_res(false_address) + "," + get_label(label_version-1) + "]";
+    return out;
   }
   
   string begin(Form* form)
@@ -325,32 +332,6 @@
   
   string define_inline_fast(Form* form)
   { return defineFunction(form,Fast,doinline); }
-  
-  string direct_call(Form* form)
-  {
-    /*string out;
-    string name = val(nth(form,1));
-    string ret_type = val(nth(form,2));
-    string c_conv = val(nth(form,3));
-    string fn_ptr_type = "(";
-    map<long,string> inputs;
-    for(unsigned long i = 4; i < length(form); i++)
-    {
-      out += emitCode(nth(form,i));
-      inputs[res_version] = latest_type();
-      fn_ptr_type += latest_type() + ",";
-    }
-    out += allocate(get_unique_tmp(),ret_type);
-    out += get_unique_tmp() + " = call " + c_conv + " " + ret_type + " " + cutlast(fn_ptr_type) + ")* @" + name + "(";
-    for(map<long,string>::iterator seeker = inputs.begin(); seeker != inputs.end(); seeker++)
-    {
-      out += seeker->second + " " + get_res(seeker->first) + ",";
-    }
-    out = cutlast(out) + ")\n";
-    out += store(ret_type,get_current_tmp(),get_tmp(tmp_version-1));
-    out += load(get_unique_res(ret_type),ret_type,get_tmp(tmp_version-1));
-    return out;*/
-  }
   
   string construct(Form* form)
   {
@@ -567,9 +548,18 @@
     return out;
   }
   
-  string pointer(Form* in)
+  string address(Form* in)
   {
-    //Does that input have an address? That is, is it an lvalue?
+    if(length(in) != 2)
+      error(in,"(address) takes a single argument");
+    string out = emitCode(nth(in,1));
+    Variable* latest = lookup(cutfirst(get_current_res()));
+    //Is the input an LValue? That is, does it have an address?
+    if(latest->regtype == LValue)
+      out += get_unique_res(latest_type()+"*") + " = select i1 true, " + latest_type() + " " + get_tmp(latest->address) + ", " + latest_type() + " " + get_tmp(latest->address);
+    else
+      error(in,"The input to (address) must be an lvalue (A symbol or the result of (access) or (nth))");
+    return out;
   }
   
   string toplevel_asm(Form* in)
@@ -711,10 +701,10 @@
     Core["access"]           = &access;
     Core["array"]            = &local_array;
     Core["nth"]              = &nth_array;
-    Core["call"]             = &direct_call;
     Core["allocate"]         = &mem_allocate;
     Core["store"]            = &mem_store;
     Core["load"]             = &mem_load;
+    Core["address"]          = &address;
     Core["asm"]              = &inline_asm;
     Core["import"]           = &import;
     //Word macros
@@ -726,6 +716,9 @@
     addWordMacro("int","i32");
     addWordMacro("long","i64");
     addWordMacro("octet","i8");
+    addWordMacro("eq","seq");
+    addWordMacro("<","slt");
+    addWordMacro("u<","ult");
     //Allowed comparisons for numerical operations
     allowedIntComparisons = {"eq", "ne", "ugt", "uge", "ult", "ule", "sgt"
                              "sge", "slt", "sle"};

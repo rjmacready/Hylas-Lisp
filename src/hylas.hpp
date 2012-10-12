@@ -41,7 +41,7 @@ namespace Hylas
   /*Module* Program;
   LLVMContext& Context = getGlobalContext();
   IRBuilder<> Builder(Context);
-  FunctionPassManager FPM(Program);
+  PassManager Passes(Program);
   ExecutionEngine* Engine;*/
   
   #define List  false
@@ -116,13 +116,15 @@ namespace Hylas
   #include "errors.hpp"
   #include "reader.hpp"
   
+  enum RegisterType { StdRegister, LValue, SymbolicRegister };
+  
   struct Variable
   {
     string type;
-    unsigned long address = -1;
+    unsigned long address;
     bool constant;
     bool global;
-    bool lvalue;
+    RegisterType regtype;
   };
   
   typedef map<string,Variable> Scope;
@@ -180,7 +182,7 @@ namespace Hylas
     string vnum = to_string(++res_version);
     SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
     SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
-    SymbolTable[ScopeDepth]["%res.version" + vnum].lvalue = true;
+    SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = LValue;
     return "%res.version" + vnum;
   }
   
@@ -231,7 +233,7 @@ namespace Hylas
   { return res_type(get_current_res()); }
   
   inline string constant(string destination, string type, string value)
-  { return destination + " = select i1 true, " + type + " " + value + ", " + type + " " value + "\n"; }
+  { return destination + " = select i1 true, " + type + " " + value + ", " + type + " " + value; }
   
   void dump_scope(unsigned long s)
   {
@@ -298,7 +300,7 @@ namespace Hylas
           if(tmp == NULL)
             error_unbound(form);
           else
-            out = load(get_unique_res(tmp->sym),tmp->sym,((tmp->global) ? "@" : "%")
+            out = load(get_unique_res_address(tmp->type,tmp->address),tmp->type,((tmp->global) ? "@" : "%")
                 + sym + to_string(ScopeDepth));
           break;
         }
@@ -306,7 +308,7 @@ namespace Hylas
         {
           //Remember strings come with their double quotes
           string str = cutboth(val(form));
-          long length = str.length()-1;
+          unsigned long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";
           push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + str + "\\0A\\00\"");
           out = get_unique_res(type) + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
@@ -316,14 +318,17 @@ namespace Hylas
     }
     else
     {
-      out = callFunction(func,false);
-      if(out == "NOFOUND")
-      {
-        string func = val(car(form));
-        map<string,hFuncPtr>::iterator seeker = Core.find(func); // We know it will be an atom because callFunction tests for that
-        if(seeker != Core.end())
-          out = seeker->second(form);
-      }
+      if(islist(car(form)))
+        error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
+      string func = val(car(form));
+      map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
+      if(seeker != TopLevel.end())
+        out = seeker->second(form);
+      seeker = Core.find(func);
+      if(seeker != Core.end())
+        out = seeker->second(form);
+      else
+        out = callFunction(form);
     }
     return out+"\n";
   }
@@ -338,28 +343,21 @@ namespace Hylas
       out = emitCode(form);
     else
     {
-      out = callFunction(func,false);
-      if(out == "NOFOUND")
-      {
-        string name = val(car(form));
-        map<string,hFuncPtr>::iterator seeker = TopLevel.find(name); // We know it will be an atom because callFunction tests for that
-        if(seeker != TopLevel.end())
-          out = seeker->second(form);
-        else
-        {
-          seeker = Core.find(name);
-          if(seeker != Core.end())
-            out = seeker->second(form);
-          else
-          {
-            error("No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype PRINT THIS.");
-          }
-        }
-      }
+      if(islist(car(form)))
+        error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
+      string func = val(car(form));
+      map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
+      if(seeker != TopLevel.end())
+        out = seeker->second(form);
+      seeker = Core.find(func);
+      if(seeker != Core.end())
+        out = seeker->second(form);
+      else
+        out = emitCode(form);
     }
     for(unsigned long i = 0; i < CodeStack.size(); i++)
       tmp += CodeStack[i] + "\n";
-    out = "define " + latest_type() + " @entry(){\n" + out + "ret " + latest_type() + " " + get_current_res() + "\n}";
+    out = "define " + latest_type() + " @entry(){\n" + out + "\nret " + latest_type() + " " + get_current_res() + "\n}";
     out = tmp + out;
     CodeStack.clear();
     tmp_version = -1;
@@ -369,14 +367,23 @@ namespace Hylas
     return out;
   }
   
+  string JIT(string code)
+  {
+    return code;
+  }
+  
   void init_optimizer()
   {
-    /*FPM.add(createBasicAliasAnalysisPass());
-    FPM.add(createInstructionCombiningPass());
-    FPM.add(createReassociatePass());
-    FPM.add(createGVNPass());
-    FPM.add(createCFGSimplificationPass());
-    FPM.doInitialization();*/
+    /*addPass(master.Passes,createBasicAliasAnalysisPass());
+    addPass(master.Passes,createInstructionCombiningPass());
+    addPass(master.Passes,createReassociatePass());
+    addPass(master.Passes,createGVNPass());
+    addPass(master.Passes,createCFGSimplificationPass());
+    addPass(master.Passes, createInstructionCombiningPass());
+    addPass(master.Passes, createCFGSimplificationPass());
+    addPass(master.Passes, createAggressiveDCEPass());
+    addPass(master.Passes, createGlobalDCEPass());
+    master.run(master.Program);*/
   }
   
   void init()
@@ -395,15 +402,15 @@ namespace Hylas
     //Engine =  EngineBuilder(Program).create();
   }
   
-  void compileIR(string in)
+  /*void compileIR(string in)
   {
-    /*SMDiagnostic errors;
+    SMDiagnostic errors;
     ParseAssemblyString(in.c_str(),Program,errors,Context);
     if(!errors.getMessage().empty())
       printf("\n%s",errors.getMessage().c_str());
     if(verifyModule(*Program))
-      nerror("The IR verifier found an unknown error.");*/
-  }
+      nerror("The IR verifier found an unknown error.");
+  }*/
   
   #include "tests.hpp"
 }

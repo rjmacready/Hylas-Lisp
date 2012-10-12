@@ -33,7 +33,7 @@
   template<typename Arg1, typename... Args>
   void error_print(const Arg1& arg1, const Args&... args)
   {
-      cout << arg1;
+      cerr << arg1;
       error_print(args...); // note: arg1 does not appear here!
   }
   
@@ -44,33 +44,33 @@
     {
       case NormalError:
         if(master.output == HTML)
-          cout << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
+          cerr << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
         else
-          cout << "Normal Error: ";
+          cerr << "Normal Error: ";
         break;
       case ReaderError:
         if(master.output == HTML)
-          cout << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
+          cerr << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
         else
-          cout << "Reader Error: ";
+          cerr << "Reader Error: ";
         break;
       case GenericError:
         if(master.output == HTML)
-          cout << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
+          cerr << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
         else
-          cout << "Error during Generic Expansion: ";
+          cerr << "Error during Generic Expansion: ";
         break;
       case MacroError:
         if(master.output == HTML)
-          cout << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
+          cerr << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
         else
-          cout << "Error during Macro Expansion: ";
+          cerr << "Error during Macro Expansion: ";
         break;        
     }
     error_print(text...);
-    cout << at(head);
+    cerr << at(head);
     if(master.output == HTML)
-      cout << "</div>";
+      cerr << "</div>";
     Unwind();
   }
   
@@ -81,32 +81,32 @@
     {
       case NormalError:
         if(master.output == HTML)
-          cout << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
+          cerr << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
         else
-          cout << "Normal Error: ";
+          cerr << "Normal Error: ";
         break;
       case ReaderError:
         if(master.output == HTML)
-          cout << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
+          cerr << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
         else
-          cout << "Reader Error: ";
+          cerr << "Reader Error: ";
         break;
       case GenericError:
         if(master.output == HTML)
-          cout << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
+          cerr << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
         else
-          cout << "Error during Generic Expansion: ";
+          cerr << "Error during Generic Expansion: ";
         break;
       case MacroError:
         if(master.output == HTML)
-          cout << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
+          cerr << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
         else
-          cout << "Error during Macro Expansion: ";
+          cerr << "Error during Macro Expansion: ";
         break;        
     }
     error_print(text...);
     if(master.output == HTML)
-      cout << "</div>";
+      cerr << "</div>";
     Unwind();
   }
   
@@ -114,7 +114,7 @@
   void warn(Form* head, T const& ... text)
   {    
     error_print(text...);
-    //cout << at(head);
+    cerr << at(head);
     if(master.output == HTML)
-      cout << "</div>";
+      cerr << "</div>";
   }

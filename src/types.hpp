@@ -12,7 +12,7 @@
   bool checkGenericExistence(string name, bool id);
   Generic writeGeneric(Form* in, bool type);
   void addGeneric(string name, Generic in);
-  Generic addGenericMethod(string name, Form* in);
+  Generic addGenericAttachment(string name, Form* in);
   Generic makeGeneric(Form* in);
   
   #define typeSimple    0
@@ -400,7 +400,7 @@
     Generics.push_back(pair<string,Generic>(name,in));
   }
   
-  Generic addGenericMethod(string name, Form* in)
+  Generic addGenericAttachment(string name, Form* in)
   {
     Generic out;
     for(unsigned long i = 0; i < Generics.size(); i++)
@@ -409,6 +409,9 @@
       {
         if(Generics[i].second.id == typeStructure)
         {
+          //Input: (generic method of [type]
+          //    (function|recursive|macro|etc... [name] [ret]* (...args...) ...body...)
+          //Output:  (function|recursive|macro|etc... [name] [ret*] ((self [type]) ...args...) ...body...)
           Form* code = readString("(" + val(car(nth(in,5))) + " " + val(nth(in,2)) + ")");
           code = append(code,cdr(nth(in,5)));
           Generics[i].second.methods.push_back(code);
@@ -424,19 +427,11 @@
   {
     Generic out;
     if(length(in) < 4)
-    {
-      printf("ERROR: Wrong number of arguments.");
-      Unwind();
-    }
+      error(in,"Wrong number of arguments.");
     if(isatom(nth(in,1)))
     {
       string text = val(nth(in,1));
-      if(analyze(text) != Symbol)
-      {
-        printf("ERROR: The first argument to (generic) must be either 'function' or 'structure'.");
-        Unwind();
-      }
-      else
+      if(analyze(text) == Symbol)
       {
         Generic out;
         string name = val(nth(in,2));
@@ -483,42 +478,21 @@
                   }
                   else
                   {
-                    out = addGenericMethod(generic_name,in);
+                    if(text == "method")
+                      out = addGenericAttachment(generic_name,in);
+                    return out;
                   }
                 }
-                else
-                {
-                  printf("ERROR:");
-                  Unwind();
-                }
               }
-              else
-              {
-                printf("ERROR:");
-                Unwind();
-              }
-            }
-            else
-            {
-              printf("ERROR:");
-              Unwind();
+              error(in,"The third argument to (generic) must be a symbolic atom.");
             }
           }
-          printf("ERROR:");
-          Unwind();
-        }
-        else
-        {
-          printf("ERROR: The second argument when making a generic is either 'function' or 'structure'. Some other text was received.");
-          Unwind();
+          error(in,"The second argument to (generic) must be 'of'.");
         }
       }
     }
     else
-    {
-      printf("ERROR: The first argument to (generic) must be either 'function' or 'structure', but a list was found.");
-      Unwind();
-    }
+      error(in,"ERROR: The second argument to (generic) must be 'function', 'structure', 'method' or 'macro'.");
     return out;
   }
   

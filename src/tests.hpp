@@ -162,11 +162,11 @@
         10)",
       "(function derp i64 ((n i64))\
         10)",
-      "(function test bool ((n i64) (m i64))\
+      "(function test i1 ((n i64) (m i64))\
         (icmp n eq m))",
-      "(function test2 bool ()\
+      "(function test2 i1 ()\
         (icmp 2 eq 2))",      //Testing Function calling
-      "(test)",
+      //"(test)",
       "(test 2 3)",
       "(test2)",
       "(recursive herp i64 ((n i64))\
@@ -174,7 +174,7 @@
       "(if (icmp 1 ult 2)\
         true\
         false)",
-      "(function sg bool ((n long))\
+      "(function sg i1 ((n i64))\
         (flow (icmp n ugt 0)\
           true\
           false))",
