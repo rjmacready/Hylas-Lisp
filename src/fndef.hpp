@@ -108,7 +108,7 @@
     if(macfind != Macros.end())
       { printf("ERROR: A macro has already been defined with that name."); Unwind(); }*/
     Scope new_scope;
-    SymbolTable.push_back(new_scope);
+    master.SymbolTable.push_back(new_scope);
     //Iterate over arguments
     map<string,string> fn_args;
     newfn.fn_ptr_type = newfn.ret_type + "(";
@@ -138,10 +138,10 @@
             {
               string type = printTypeSignature(nth(current_arg,1));
               fn_args[argname] = type;
-              SymbolTable[ScopeDepth][argname].type = type;
-              SymbolTable[ScopeDepth][argname].constant = false;
-              SymbolTable[ScopeDepth][argname].global = false;
-              SymbolTable[ScopeDepth][argname].regtype = LValue;
+              master.SymbolTable[ScopeDepth][argname].type = type;
+              master.SymbolTable[ScopeDepth][argname].constant = false;
+              master.SymbolTable[ScopeDepth][argname].global = false;
+              master.SymbolTable[ScopeDepth][argname].regtype = LValue;
               newfn.fn_ptr_type += type + ",";
             }
           }
@@ -372,8 +372,8 @@
         //Name not found in the function table, now let's try variables
         for(long i = ScopeDepth; i != -1; i--)
         {
-          map<string,Variable>::iterator seeker = SymbolTable[i].find(name);
-          if(seeker != SymbolTable[i].end())
+          map<string,Variable>::iterator seeker = master.SymbolTable[i].find(name);
+          if(seeker != master.SymbolTable[i].end())
           {
             if(isFunctionPointer(seeker->second.type))
             {

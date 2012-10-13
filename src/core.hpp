@@ -32,11 +32,11 @@
     if(!typeonly)
     {
       out += store(type,get_current_res(),fullname);
-      SymbolTable[ScopeDepth][varname].type = type;
-      SymbolTable[ScopeDepth][varname].constant = false;
-      SymbolTable[ScopeDepth][varname].global = global;
-      SymbolTable[ScopeDepth][varname].address = tmp_version;
-      SymbolTable[ScopeDepth][varname].regtype = SymbolicRegister;
+      master.SymbolTable[ScopeDepth][varname].type = type;
+      master.SymbolTable[ScopeDepth][varname].constant = false;
+      master.SymbolTable[ScopeDepth][varname].global = global;
+      master.SymbolTable[ScopeDepth][varname].address = tmp_version;
+      master.SymbolTable[ScopeDepth][varname].regtype = SymbolicRegister;
     }
     else
       out = constant(get_unique_res("i1"),"i1","true");
@@ -656,7 +656,7 @@
   void init_stdlib()
   {
     Scope new_scope;
-    SymbolTable.push_back(new_scope);
+    master.SymbolTable.push_back(new_scope);
     //Init Core
     TopLevel["main"]         = &main_fn;
     TopLevel["LLVM"]         = &embed_llvm;

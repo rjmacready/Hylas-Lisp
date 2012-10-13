@@ -96,26 +96,6 @@ namespace Hylas
   string operator+(Form* in, string out)
   { return print(in) + out; }
   
-  struct Compiler
-  {
-    //General Behaviour options
-    bool allow_RedefineMacros;
-    bool allow_RedefineFunctions;
-    bool allow_RedefineWordMacros;
-    bool allow_RedefinePrePostfixes;
-    //Should the output be HTML or plain text? (For pretty frontends)
-    bool output;
-  };
-  
-  Compiler master;
-  
-  #define plain         false
-  #define HTML          true
- 
-  #include "utils.hpp"
-  #include "errors.hpp"
-  #include "reader.hpp"
-  
   enum RegisterType { StdRegister, LValue, SymbolicRegister };
   
   struct Variable
@@ -129,8 +109,36 @@ namespace Hylas
   
   typedef map<string,Variable> Scope;
   typedef vector<Scope> ST;
-  ST SymbolTable;
-  #define ScopeDepth SymbolTable.size()-1
+  
+  struct Compiler
+  {
+    //General Behaviour options
+    bool allow_RedefineMacros;
+    bool allow_RedefineFunctions;
+    bool allow_RedefineWordMacros;
+    bool allow_RedefinePrePostfixes;
+    //Should the output be HTML or plain text? (For pretty frontends)
+    bool output;
+    //Shit
+    ST SymbolTable;
+    vector<string> CodeStack;
+  };
+  
+  #define ScopeDepth master.SymbolTable.size()-1
+  
+  Compiler master;
+  
+  inline void push(string in)
+  {
+    master.CodeStack.push_back(in);
+  }
+  
+  #define plain         false
+  #define HTML          true
+ 
+  #include "utils.hpp"
+  #include "errors.hpp"
+  #include "reader.hpp"
   
   inline void error_unbound(Form* x)
   { error(x,"Symbol '",print(x),"' is unbound."); }
@@ -139,8 +147,8 @@ namespace Hylas
   {
     for(long i = ScopeDepth; i != -1; i--)
     {
-      map<string,Variable>::iterator seeker = SymbolTable[i].find(in);
-      if(seeker != SymbolTable[i].end())
+      map<string,Variable>::iterator seeker = master.SymbolTable[i].find(in);
+      if(seeker != master.SymbolTable[i].end())
         return &seeker->second;
     }
     return NULL;
@@ -173,16 +181,16 @@ namespace Hylas
   string get_unique_res(string type)
   {
     string vnum = to_string(++res_version);
-    SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
+    master.SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
     return "%res.version" + vnum;
   }
   
   string get_unique_res_address(string type, unsigned long address)
   {
     string vnum = to_string(++res_version);
-    SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
-    SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
-    SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = LValue;
+    master.SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
+    master.SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
+    master.SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = LValue;
     return "%res.version" + vnum;
   }
   
@@ -237,20 +245,13 @@ namespace Hylas
   
   void dump_scope(unsigned long s)
   {
-    for(map<string,Variable>::iterator i = SymbolTable[s].begin();
-        i != SymbolTable[s].end(); i++)
+    for(map<string,Variable>::iterator i = master.SymbolTable[s].begin();
+        i != master.SymbolTable[s].end(); i++)
     {
       printf("\n %s : %s",i->first.c_str(),i->second.type.c_str());
     }
   }
   
-  vector<string> CodeStack;
-  
-  inline void push(string in)
-  {
-    CodeStack.push_back(in);
-  }
-
   #include "types.hpp"
   #include "fndef.hpp"
   #include "core.hpp"
@@ -307,10 +308,22 @@ namespace Hylas
         case String:
         {
           //Remember strings come with their double quotes
+          //Also convert them to unicode
           string str = cutboth(val(form));
           unsigned long length = str.length()-1;
           string type = "[" + to_string<long>(length) + " x i8]";
-          push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + str + "\\0A\\00\"");
+          stringstream ss;
+          string result;
+          for(unsigned long i = 0; i < str.length(); i++)
+          { 
+            ss << hex << (int)str[i];
+            string tmp = ss.str();
+            if(tmp.length() > 2)
+              tmp = string(tmp,tmp.length()-2);
+            result += '\\' + tmp;
+          }
+          result += "\\00";
+          push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + result + "\\00\"");
           out = get_unique_res(type) + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
           break;
         }
@@ -355,11 +368,11 @@ namespace Hylas
       else
         out = emitCode(form);
     }
-    for(unsigned long i = 0; i < CodeStack.size(); i++)
-      tmp += CodeStack[i] + "\n";
+    for(unsigned long i = 0; i < master.CodeStack.size(); i++)
+      tmp += master.CodeStack[i] + "\n";
     out = "define " + latest_type() + " @entry(){\n" + out + "\nret " + latest_type() + " " + get_current_res() + "\n}";
     out = tmp + out;
-    CodeStack.clear();
+    master.CodeStack.clear();
     tmp_version = -1;
     res_version = -1;
     label_version = -1;
@@ -369,6 +382,12 @@ namespace Hylas
   
   string JIT(string code)
   {
+    /*SMDiagnostic errors;
+    ParseAssemblyString(in.c_str(),Program,errors,Context);
+    if(!errors.getMessage().empty())
+      printf("\n%s",errors.getMessage().c_str());
+    if(verifyModule(*Program))
+      nerror("The IR verifier found an unknown error.");*/
     return code;
   }
   
@@ -402,15 +421,10 @@ namespace Hylas
     //Engine =  EngineBuilder(Program).create();
   }
   
-  /*void compileIR(string in)
+  void restart()
   {
-    SMDiagnostic errors;
-    ParseAssemblyString(in.c_str(),Program,errors,Context);
-    if(!errors.getMessage().empty())
-      printf("\n%s",errors.getMessage().c_str());
-    if(verifyModule(*Program))
-      nerror("The IR verifier found an unknown error.");
-  }*/
+    
+  }
   
   #include "tests.hpp"
 }

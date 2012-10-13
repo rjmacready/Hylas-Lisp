@@ -129,9 +129,9 @@
     testPrintTypeSignature(readString("(derp i32*)"));
     testPrintTypeSignature(readString("(sequence char)"));
     cout << "Code Stack: " << endl;
-    for(unsigned long i = 0; i < CodeStack.size(); i++)
+    for(unsigned long i = 0; i < master.CodeStack.size(); i++)
     {
-      cout << CodeStack[i] << endl;
+      cout << master.CodeStack[i] << endl;
     }
   }
   
@@ -190,8 +190,8 @@
     {
       out += "Test #" + to_string(i+1) + ":\n> " + tests[i] + "\n\n";
       out += Compile(readString(tests[i])) + "\n\n";
-      for(unsigned long j = 0; j < CodeStack.size(); j++)
-        cout << CodeStack[j];
+      for(unsigned long j = 0; j < master.CodeStack.size(); j++)
+        cout << master.CodeStack[j];
       cout << out << endl;
       cin.get();
     }
