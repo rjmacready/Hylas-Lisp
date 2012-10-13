@@ -310,11 +310,11 @@ namespace Hylas
           //Remember strings come with their double quotes
           //Also convert them to unicode
           string str = cutboth(val(form));
-          unsigned long length = str.length()-1;
-          string type = "[" + to_string<long>(length) + " x i8]";
+          unsigned long length = str.length();
+          string type = "[" + to_string<unsigned long>(length+1) + " x i8]";
           stringstream ss;
           string result;
-          for(unsigned long i = 0; i < str.length(); i++)
+          for(unsigned long i = 0; i < length; i++)
           { 
             ss << hex << (int)str[i];
             string tmp = ss.str();
@@ -322,9 +322,8 @@ namespace Hylas
               tmp = string(tmp,tmp.length()-2);
             result += '\\' + tmp;
           }
-          result += "\\00";
           push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + result + "\\00\"");
-          out = get_unique_res(type) + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
+          out = get_unique_res("i8*") + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
           break;
         }
       }

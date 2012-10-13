@@ -184,6 +184,7 @@
           (add (fib (sub n 1))\
                (fib (sub n 2)))))",
       "(fib 30)",
+      "\"Uｎ𝓲𝐜σd͢é\"", //The physical length of this string is 21 i8
       "\0"
     };
     for(unsigned long i = 0; tests[i] != "\0"; i++)
