@@ -1,0 +1,42 @@
+(link-with libm)
+
+!Absolute value
+(foreign abs int int)
+(foreign labs long long)
+(foreign fabsf float float)
+(foreign fabs double double)
+
+  (inline abs int ((int n)) (abs n))
+  (inline abs long ((long n)) (labs n))
+  (inline abs float ((float n)) (fabsf n))
+  (inline abs double ((double n)) (fabs n))
+
+!Division
+(foreign div int int int)
+(foreign ldiv long long long)
+
+!Remainder
+(foreign fmodf float float float)
+(foreign fmod double double double)
+(foreign remainderf float float float)
+(foreign remainder double double)
+(foreign remquof float float float (pointer int))
+(foreign remquo double double double (pointer int))
+
+(foreign fmaf float float float float)
+(foreign fma double double double double)
+
+(foreign fmaxf float float float)
+(foreign fmax double double double)
+
+(foreign fminf float float float)
+(foreign fmin double double double)
+
+(foreign fdimf float float float)
+(foreign fdim double double double)
+
+(foreign nanf float (pointer char))
+(foreign nan double (pointer char))
+
+
+(word HUGE_VAL "hugeval") !Set this to the proper value

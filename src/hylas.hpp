@@ -224,7 +224,7 @@ namespace Hylas
   { 
     Variable* tmp = lookup(name);
     if(tmp == NULL)
-    { printf("Can't find symbol."); Unwind(); }
+    { nerror("Can't find register '",name,"'."); }
     return tmp->type;
   }
   

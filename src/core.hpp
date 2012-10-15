@@ -278,26 +278,46 @@
   
   string foreign(Form* form)
   {
-    string name = val(nth(form,1));
-    string ret_type = printTypeSignature((nth(form,2)));
-    string args = "(";
-    string call_args;
-    string out = "declare " + ret_type + " @" + name + "(";
-    for(unsigned long i = 3; i <= length(form)-1; i++)
+    Lambda newfn;
+    string raw_name = val(nth(form,1));
+    newfn.name = raw_name;
+    newfn.ret_type = print(printTypeSignature(nth(form,2)));
+    newfn.fn_ptr_type = newfn.ret_type + "(";
+    for(unsigned long i = 0; i < length(form); i++)
     {
-      out += printTypeSignature(nth(form,i)) + ",";
-      args += "(arg." + to_string(i) + " " + print(nth(form,i)) + ")";
-      call_args += " arg." + to_string(i);
+      if(isatom(nth(form,i)))
+      {
+        if(val(nth(form,i)) == "...")
+          newfn.fn_ptr_type += "...,";
+      }
+      else
+        newfn.fn_ptr_type += printTypeSignature(nth(form,i)) + ",";
     }
-    out = cutlast(out) + ")\n";
-    push(out);
-    args += (string)")";
-    out =
-      "(inline " + name + " " + ret_type + " " + args
-      + "(call " + name + " " + ret_type + " ccc " + call_args + "))";
-    cout << out << endl;
-    Form* code = readString(out);
-    return emitCode(code);
+    newfn.fn_ptr_type = ((cdr(cdr(cdr(form))) == NULL)?newfn.fn_ptr_type+")*":cutlast(newfn.fn_ptr_type)+")*");
+    string rem = removeReturn(newfn.fn_ptr_type);
+    map<string,MetaFunction>::iterator seeker = FunctionTable.find(newfn.name);
+    if(seeker != FunctionTable.end())
+    {
+      for(unsigned int i = 0; i < seeker->second.versions.size(); i++)
+      {
+        if(removeReturn(seeker->second.versions[i].fn_ptr_type) == rem) //Compare prototypes without comparing return types
+          error(form,"A function with the same prototype (",cutlast(rem),") has already been defined.");
+      }
+      //newfn.name += to_string(seeker->second.versions.size()-1);
+      seeker->second.versions.push_back(newfn);
+    }
+    else
+    {
+      //newfn.name = newfn.name + "0";
+      MetaFunction new_metafn;
+      new_metafn.versions.push_back(newfn);
+      FunctionTable[newfn.name] = new_metafn;
+    }
+    push("declare " + newfn.ret_type + " @" + raw_name + rem);
+    /*string arguments
+    push("define " + newfn.ret_type +  " @" + newfn.name + rem + "alwaysinline \n{\n%0 = call " + newfn.ret_type + " @" + raw_name + 
+         + newfn.ret_type +*/
+    return constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,newfn.name);
   }
   
   string embed_llvm(Form* form)

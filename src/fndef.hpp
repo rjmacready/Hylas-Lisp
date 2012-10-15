@@ -89,7 +89,7 @@
   }
   
   string removeReturn(string in)
-  { return string(in,in.find("(")-1); }
+  { return string(in,in.find("(")); }
   
   string defineFunction(Form* form, fnType fn_type, bool inlining)
   {
@@ -212,99 +212,6 @@
     //Not implemented yet
     return print(code) + to_string(gen_pos);
   }
-  
-  /*string callFunction(string func, Form* code)
-  {
-    if(analyze(func) != Symbol)
-      error(code,"A non-symbolic atom was used as a function name");
-    string callcode, arg_code, clean_fn_ptr;
-    for(unsigned long i = 0; i < Generics.size(); i++)
-    {
-      if(Generics[i].first == func)
-      {
-        if(Generics[i].second.id == typeFunction)
-        {
-          return callGeneric(i,code);
-        }
-      }
-    }
-    map<string,MetaFunction>::iterator seeker = FunctionTable.find(func);
-    if(seeker != FunctionTable.end())
-    {
-      vector<string> arguments;
-      vector<unsigned long> res_nums;
-      if(code != NULL)
-      {
-        Form* curr;
-        for(unsigned long i = 1; i < length(code); i++)
-        {
-          curr = nth(code,i);
-          callcode += emitCode(curr);
-          arguments.push_back(latest_type());
-          res_nums.push_back(res_version);
-        }
-      }
-      for(unsigned long i = 0; i < seeker->second.versions.size(); i++)
-      {
-        bool is_varargs = false;
-        map<string,string>::iterator arg_iterator = seeker->second.versions[i].arguments.end();
-        if((--arg_iterator)->second == "...")
-          is_varargs = true;
-        if(!is_varargs && (seeker->second.versions[i].arguments.size() != arguments.size()))
-          goto breakout;
-        if(is_varargs && (seeker->second.versions[i].arguments.size() > arguments.size()))
-          goto breakout;
-        arg_iterator = seeker->second.versions[i].arguments.begin();
-        unsigned long j = 0;
-        if(!is_varargs)
-        {
-          for(; j < arguments.size(); j++)
-          {
-            if(arguments[j] != arg_iterator->second)
-              goto breakout; //Normal function, argument mismatch
-            else
-              arg_code += arguments[j] + " " + get_res(res_nums[j]) + ",";
-            //We don't have to check that the iterator is != arguments.end()
-            //because that is done implicitly by the size() == arguments.size() check
-            //This only goes up to arguments.size(), so varargs are implicitly in
-            arg_iterator++;
-          }
-        }
-        else
-        {
-          //We just iterate over the checked-against function's arguments, up until just before "..."
-          //to see if there's a type mismatch before varargs
-          for(; arg_iterator != --(seeker->second.versions[i].arguments.end()); arg_iterator++)
-          {
-            if(arguments[j] != arg_iterator->second)
-              goto breakout;
-            else
-              arg_code += arguments[j] + " " + get_res(res_nums[j]) + ",";
-            j++;
-          }
-          //Now we iterate from j forward until the end of the arguments, checking nothing
-          for(; j < arguments.size(); j++)
-            arg_code += arguments[j] + " " + get_res(res_nums[j]) + ",";
-        }
-        //Found a matching function
-        callcode += get_unique_res(seeker->second.versions[i].ret_type);
-        callcode += (string)" = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
-        callcode += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
-        callcode += seeker->second.versions[i].ret_type;
-        //Clean the function pointer type to remove the return type
-        clean_fn_ptr = seeker->second.versions[i].fn_ptr_type;
-        clean_fn_ptr = string(clean_fn_ptr,clean_fn_ptr.find('(')+1);
-        callcode += clean_fn_ptr; 
-        callcode += " @" + func + to_string(i) + (arguments.empty() ? "()" : ("(" + cutlast(arg_code))) + ")";
-        return callcode;
-        breakout:
-        callcode = ""; arg_code = ""; clean_fn_ptr = ""; //Clean up for the next iteration
-      }
-    }
-    error(code,"Couldn't find the function '",func,"'.");
-    return "";
-  }*/
-  
   bool isFunctionPointer(string in)
   {
     return ((in.find('(') != string::npos) &&
@@ -352,8 +259,10 @@
         for(unsigned long i = 0; i < seeker->second.versions.size(); i++)
         {
           cout << "Pointer: " << pointer << endl;
-          cout << "Pointer compared: " << cleanPointer(seeker->second.versions[i].fn_ptr_type) << endl;
-          if(pointer == cleanPointer(seeker->second.versions[i].fn_ptr_type))
+          string target = cleanPointer(seeker->second.versions[i].fn_ptr_type);
+          cout << "Pointer compared: " << target << endl;
+          if((pointer == target) ||
+             (string(pointer,0,target.find("...")) == string(target,0,target.find("..."))))
           {
             string ret_type = seeker->second.versions[i].ret_type;
             //Found our match, emit code to call the function
@@ -377,7 +286,9 @@
           {
             if(isFunctionPointer(seeker->second.type))
             {
-              if(cleanPointer(seeker->second.type) == pointer)
+              string target = cleanPointer(seeker->second.type);
+              if((pointer == target) ||
+                 (string(pointer,0,target.find("...")) == string(target,0,target.find("..."))))
               {
                 //Found our match, emit code to call the pointer
                 string ret_type = string(seeker->second.type,0,seeker->second.type.find('('));
@@ -397,7 +308,9 @@
       out += emitCode(nth(in,0));
       if(isFunctionPointer(latest_type()))
       {
-        if(cleanPointer(latest_type()) == pointer)
+        string target = cleanPointer(latest_type());
+        if((pointer == target) ||
+           (string(pointer,0,target.find("...")) == string(target,0,target.find("..."))))
         {
           string ret_type = string(latest_type(),0,latest_type().find('('));
           out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + "* " + get_current_res() + arguments;
