@@ -1,5 +1,5 @@
 CC = g++
-CXXFLAGS = -std=c++0x
+CXXFLAGS = -std=c++0x -Wall -Wextra -Werror
 LDFLAGS = `llvm-config --libs engine --cxxflags --ldflags`
 SRCDIR = src
 SOURCES = $(SRCDIR)/*.cpp

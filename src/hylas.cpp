@@ -7,14 +7,21 @@ int main()
   init();
   cout << "Running tests:\n" << endl;
   runTests();
-  setjmp(buf);
   while(true)
   {
-    printf("\n>");
-    Form* code = read(stdin);
-    printf("Read form:\n%s\n",print(code).c_str());
-    string compiledCode = Compile(code);
-    printf("Compiled form:\n%s",compiledCode.c_str());
+    try
+    {
+      printf("\n>");
+      Form* code = read(stdin);
+      printf("Read form:\n%s\n",print(code).c_str());
+      string compiledCode = Compile(code);
+      printf("Compiled form:\n%s",compiledCode.c_str());
+    }
+    catch(char except)
+    {
+      cout << getError() << endl;
+      continue;
+    }
     //compileIR(compiledCode);
     //Program->dump();
     /*if(!toplevel_exclusive)

@@ -1,11 +1,3 @@
-  typedef string (*hFuncPtr)(Form* code);
-  
-  map<string,hFuncPtr> TopLevel;
-  map<string,hFuncPtr> Core;
-  
-  vector<string> allowedIntComparisons;
-  vector<string> allowedFloatComparisons;
-  
   string def(Form* form, bool global, bool typeonly)
   {
     cout << print(form) << endl;
@@ -21,7 +13,7 @@
     }
     else if(!typeonly)
     {
-      emitCode(nth(form,2));
+      out += emitCode(nth(form,2));
       type = latest_type();
     }
     string fullname = (global?"@":"%")+varname;
@@ -35,7 +27,7 @@
       master.SymbolTable[ScopeDepth][varname].type = type;
       master.SymbolTable[ScopeDepth][varname].constant = false;
       master.SymbolTable[ScopeDepth][varname].global = global;
-      master.SymbolTable[ScopeDepth][varname].address = tmp_version;
+      master.SymbolTable[ScopeDepth][varname].address = fullname;
       master.SymbolTable[ScopeDepth][varname].regtype = SymbolicRegister;
     }
     else
@@ -209,14 +201,13 @@
     }
     //Emit code
     out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_current_res() + ", i32 0, i32" + member_loc + "\n";
-    out += load(get_unique_res_address(member_type,tmp_version),member_type,get_current_tmp());
+    out += load(get_unique_res_address(member_type,to_string(tmp_version)),member_type,get_current_tmp());
     return out;
   }
   
   string simple_if(Form* form)
   {
     string out = emitCode(nth(form,1));
-    unsigned long cond_address = res_version;
     if(latest_type() != "i1")
       error(form,"The test (Second argument) of an (if) form must evaluate to a boolean (i1) value.");
     else
@@ -504,7 +495,7 @@
     out += emitCode(nth(in,2));
     out += get_unique_tmp() + " = getelementptr inbounds " + latest_type() + "* " + get_current_res()
         + ", i64 " + get_res(address_location);
-    out += load(get_unique_res_address(cutlast(latest_type()),tmp_version),latest_type(),get_current_tmp());
+    out += load(get_unique_res_address(cutlast(latest_type()),to_string(tmp_version)),latest_type(),get_current_tmp());
     return out;
   }
   
@@ -512,8 +503,7 @@
   {
     //%x = allocate [type]
     string type = printTypeSignature(nth(in,1));
-    string out = allocate(get_unique_tmp(),type);
-    out += constant(get_unique_res(type+"*"),type,get_current_tmp());
+    string out = allocate(get_unique_res(type+"*"),type);
     return out;
   }
   
@@ -556,7 +546,9 @@
     Variable* latest = lookup(cutfirst(get_current_res()));
     //Is the input an LValue? That is, does it have an address?
     if(latest->regtype == LValue)
-      out += get_unique_res(latest_type()+"*") + " = select i1 true, " + latest_type() + " " + get_tmp(latest->address) + ", " + latest_type() + " " + get_tmp(latest->address);
+      out += constant(get_unique_res(latest_type()+"*"),latest_type(),get_tmp(from_string<unsigned long>(latest->address)));
+    else if(latest->regtype == SymbolicRegister)
+      out += constant(get_unique_res(latest_type()+"*"),latest_type(),latest->address);
     else
       error(in,"The input to (address) must be an lvalue (A symbol or the result of (access) or (nth))");
     return out;

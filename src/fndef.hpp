@@ -407,4 +407,5 @@
       else
         error(in,"Tried to compile the first element of the form '",in,"' to see if it was a callable function pointer, but an object of type '",latest_type(),"' was found.");
     }
+    return out;
   }

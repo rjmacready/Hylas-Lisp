@@ -1,20 +1,3 @@
-  struct Type;
-  struct Generic;
-  bool isInteger(string in);
-  bool isCoreType(string in);
-  bool isArgument(Form* in, map<string,Form*> arguments);
-  Form* editForm(Form* in, map<string,Form*> replacements);
-  string specializeType(Generic* in, map<string,Form*> replacements, string signature);
-  string printTypeSignature(Form* form);
-  bool checkTypeExistence(string name);
-  string makeType(Form* in);
-  string makeStructure(Form* in);
-  bool checkGenericExistence(string name, bool id);
-  Generic writeGeneric(Form* in, bool type);
-  void addGeneric(string name, Generic in);
-  Generic addGenericAttachment(string name, Form* in);
-  Generic makeGeneric(Form* in);
-  
   #define typeSimple    0
   #define typeStructure 1
   #define typeFunction 2
@@ -62,7 +45,7 @@
   
   string specializeType(Generic* in, map<string,Form*> replacements, string signature)
   {
-    errormode = GenericError;
+    master.errormode = GenericError;
     Form* specialization_code = editForm(in->code, replacements);
     string out = signature + " = type { ";
     string type;
@@ -177,7 +160,7 @@
   
   bool checkTypeExistence(string name)
   {
-    return ((BasicTypes.find(name) != BasicTypes.end()) ? true : false);
+    return ((isCoreType(name) || (BasicTypes.find(name) != BasicTypes.end())) ? true : false);
   }
   
   string makeType(Form* in)

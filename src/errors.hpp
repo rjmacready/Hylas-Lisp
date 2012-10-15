@@ -6,17 +6,18 @@
   #define GenericError  2
   #define MacroError    3
   
-  unsigned char errormode = NormalError;
-  
-  inline void reseterror() { errormode = NormalError; }
+  inline void reseterror() { master.errormode = NormalError; }
   
   void Unwind()
   {
     if(testmode)
       exit(-1);
     else
-      longjmp(buf,0);
+      throw '\0';
   }
+  
+  string getError()
+  { string tmp = master.errmsg; master.errmsg.clear(); return tmp; }
  
   string at(Form* in)
   {
@@ -28,85 +29,69 @@
         + to_string<int>(in->column) + (string)":\n" + in;
   }
   
+  inline string print(string in){ return in; }
+  inline string print(char* in){ return string(in); }
+  inline string print(const char* in){ return string(in); }
+  inline string print(const char& in){ return string((const char*)in); }
+  
   void error_print() {} // termination version
   
   template<typename Arg1, typename... Args>
   void error_print(const Arg1& arg1, const Args&... args)
   {
-      cerr << arg1;
+      master.errmsg += print(arg1);
       error_print(args...); // note: arg1 does not appear here!
+  }
+  
+  void print_errormode()
+  {
+    switch(master.errormode)
+    {
+      case NormalError:
+        if(master.output == HTML)
+          master.errmsg += "<div class='error normalerror'><strong><a href src='Errors.html#Normal_Errors'>Normal Error</a>:</strong> ";
+        else
+          master.errmsg += "Normal Error: ";
+        break;
+      case ReaderError:
+        if(master.output == HTML)
+          master.errmsg += "<div class='error readererror'><strong><a href src='Errors.html#Reader_Errors'>Reader Error</a>:</strong> ";
+        else
+          master.errmsg += "Reader Error: ";
+        break;
+      case GenericError:
+        if(master.output == HTML)
+          master.errmsg += "<div class='error genericerror'><strong><a href src='Errors.html#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
+        else
+          master.errmsg += "Error during Generic Expansion: ";
+        break;
+      case MacroError:
+        if(master.output == HTML)
+          master.errmsg += "<div class='error macroerror'><strong><a href src='Errors.html#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
+        else
+          master.errmsg += "Error during Macro Expansion: ";
+        break;
+    }
   }
   
   template<typename... T>
   void error(Form* head, T const& ... text)
   {
-    switch(errormode)
-    {
-      case NormalError:
-        if(master.output == HTML)
-          cerr << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
-        else
-          cerr << "Normal Error: ";
-        break;
-      case ReaderError:
-        if(master.output == HTML)
-          cerr << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
-        else
-          cerr << "Reader Error: ";
-        break;
-      case GenericError:
-        if(master.output == HTML)
-          cerr << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
-        else
-          cerr << "Error during Generic Expansion: ";
-        break;
-      case MacroError:
-        if(master.output == HTML)
-          cerr << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
-        else
-          cerr << "Error during Macro Expansion: ";
-        break;        
-    }
+    print_errormode();
     error_print(text...);
-    cerr << at(head);
+    master.errmsg += at(head);
     if(master.output == HTML)
-      cerr << "</div>";
+      master.errmsg += "</div>";
     Unwind();
   }
   
   template<typename... T>
   void nerror(T const& ... text)
   {
-    switch(errormode)
-    {
-      case NormalError:
-        if(master.output == HTML)
-          cerr << "<div class='normalerror'><strong><a href src='docs/Errors#Normal_Errors'>Normal Error</a>:</strong> ";
-        else
-          cerr << "Normal Error: ";
-        break;
-      case ReaderError:
-        if(master.output == HTML)
-          cerr << "<div class='readererror'><strong><a href src='docs/Errors#Reader_Errors'>Reader Error</a>:</strong> ";
-        else
-          cerr << "Reader Error: ";
-        break;
-      case GenericError:
-        if(master.output == HTML)
-          cerr << "<div class='genericerror'><strong><a href src='docs/Errors#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
-        else
-          cerr << "Error during Generic Expansion: ";
-        break;
-      case MacroError:
-        if(master.output == HTML)
-          cerr << "<div class='macroerror'><strong><a href src='docs/Errors#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
-        else
-          cerr << "Error during Macro Expansion: ";
-        break;        
-    }
+    print_errormode();
     error_print(text...);
     if(master.output == HTML)
-      cerr << "</div>";
+      master.errmsg += "</div>";
     Unwind();
   }
   
@@ -114,7 +99,7 @@
   void warn(Form* head, T const& ... text)
   {    
     error_print(text...);
-    cerr << at(head);
+    master.errmsg += at(head);
     if(master.output == HTML)
-      cerr << "</div>";
+      master.errmsg += "</div>";
   }

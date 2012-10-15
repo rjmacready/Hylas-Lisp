@@ -101,14 +101,22 @@ namespace Hylas
   struct Variable
   {
     string type;
-    unsigned long address;
+    string address;
     bool constant;
     bool global;
     RegisterType regtype;
   };
   
+  struct RGB
+  {
+    unsigned int  Red; unsigned int Green; unsigned int Blue;
+    RGB(unsigned int r, unsigned int g, unsigned int b): Red(r), Green(g), Blue(b) {}
+  };
+  
   typedef map<string,Variable> Scope;
   typedef vector<Scope> ST;
+  
+  enum TextOutput {Plain, HTML};
   
   struct Compiler
   {
@@ -118,7 +126,13 @@ namespace Hylas
     bool allow_RedefineWordMacros;
     bool allow_RedefinePrePostfixes;
     //Should the output be HTML or plain text? (For pretty frontends)
-    bool output;
+    TextOutput output;
+    string prompt;
+    map<string,RGB> Colorscheme;
+    string CSS;
+    //Errors
+    string errmsg;
+    unsigned char errormode;
     //Shit
     ST SymbolTable;
     vector<string> CodeStack;
@@ -133,12 +147,16 @@ namespace Hylas
     master.CodeStack.push_back(in);
   }
   
-  #define plain         false
-  #define HTML          true
- 
+  typedef string (*hFuncPtr)(Form* code);
+  
+  map<string,hFuncPtr> TopLevel;
+  map<string,hFuncPtr> Core;
+  
+  vector<string> allowedIntComparisons;
+  vector<string> allowedFloatComparisons;
+
   #include "utils.hpp"
   #include "errors.hpp"
-  #include "reader.hpp"
   
   inline void error_unbound(Form* x)
   { error(x,"Symbol '",print(x),"' is unbound."); }
@@ -185,7 +203,7 @@ namespace Hylas
     return "%res.version" + vnum;
   }
   
-  string get_unique_res_address(string type, unsigned long address)
+  string get_unique_res_address(string type, string address)
   {
     string vnum = to_string(++res_version);
     master.SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
@@ -252,7 +270,60 @@ namespace Hylas
     }
   }
   
+  struct Type;
+  struct Generic;
+  bool isInteger(string in);
+  bool isCoreType(string in);
+  bool isArgument(Form* in, map<string,Form*> arguments);
+  Form* editForm(Form* in, map<string,Form*> replacements);
+  string specializeType(Generic* in, map<string,Form*> replacements, string signature);
+  string printTypeSignature(Form* form);
+  bool checkTypeExistence(string name);
+  string makeType(Form* in);
+  string makeStructure(Form* in);
+  bool checkGenericExistence(string name, bool id);
+  Generic writeGeneric(Form* in, bool type);
+  void addGeneric(string name, Generic in);
+  Generic addGenericAttachment(string name, Form* in);
+  Generic makeGeneric(Form* in);
+  
+  map<string,string> WordMacros;
+  map<char,string> Prefixes;
+  map<char,string> Postfixes;
+  
+  void addWordMacro(string word, string replacement);
+  string getMacro(string word);
+  string tryPrefixOrPostfix(string word, bool pre);
+  inline Form* cons(Form* first, Form* second);
+  Form* append(Form* first, Form* second);
+  inline unsigned long length(Form* in);
+  inline Form* nth(Form* in, long location);
+  inline Form* makeForm(string in, bool tag);
+  inline void clear_reader();
+  inline char next_char(FILE* in);
+  inline void unget_char(char c, FILE* in);
+  string next_token(FILE *in);
+  Form* read_tail(FILE *in);
+  bool isArgument(Form* in, map<string,Form*> arguments);
+  Form* editForm(Form* in, map<string,Form*> replacements);
+  Form* expand(Form* in, unsigned char order);
+  Form* expandEverything(Form* in);
+  Form* read(FILE* in);
+  Form* readFile(string filename);
+  Form* readString(string in);
+  string print(Form* in);
+  #define BooleanTrue           0
+  #define BooleanFalse          1
+  #define Integer               2
+  #define Character             3
+  #define Real                  4
+  #define Symbol                5
+  #define String                6
+  #define Unidentifiable        7
+  unsigned char analyze(string input);
+  
   #include "types.hpp"
+  #include "reader.hpp"
   #include "fndef.hpp"
   #include "core.hpp"
   #include "macros.hpp"
@@ -294,17 +365,6 @@ namespace Hylas
           out = constant(get_unique_res("double"),"double",val(form));
           break;
         }
-        case Symbol:
-        {
-          string sym = val(form);
-          Variable* tmp = lookup(sym);
-          if(tmp == NULL)
-            error_unbound(form);
-          else
-            out = load(get_unique_res_address(tmp->type,tmp->address),tmp->type,((tmp->global) ? "@" : "%")
-                + sym + to_string(ScopeDepth));
-          break;
-        }
         case String:
         {
           //Remember strings come with their double quotes
@@ -324,6 +384,17 @@ namespace Hylas
           }
           push("@str" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + result + "\\00\"");
           out = get_unique_res("i8*") + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
+          break;
+        }
+        case Symbol:
+        {
+          string sym = val(form);
+          Variable* tmp = lookup(sym);
+          if(tmp == NULL)
+            error_unbound(form);
+          else
+            out = load(get_unique_res_address(tmp->type,tmp->address),tmp->type,((tmp->global) ? "@" : "%")
+                + sym + to_string(ScopeDepth));
           break;
         }
       }
@@ -361,11 +432,14 @@ namespace Hylas
       map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
       if(seeker != TopLevel.end())
         out = seeker->second(form);
-      seeker = Core.find(func);
-      if(seeker != Core.end())
-        out = seeker->second(form);
       else
-        out = emitCode(form);
+      {
+        seeker = Core.find(func);
+        if(seeker != Core.end())
+          out = seeker->second(form);
+        else
+          out = emitCode(form);
+      }
     }
     for(unsigned long i = 0; i < master.CodeStack.size(); i++)
       tmp += master.CodeStack[i] + "\n";
@@ -404,6 +478,37 @@ namespace Hylas
     master.run(master.Program);*/
   }
   
+  map<string,RGB> defaultColorscheme()
+  {
+    map<string,RGB> tmp;
+    tmp.insert(pair<string,RGB>("BooleanTrue",RGB(0,205,0)));
+    tmp.insert(pair<string,RGB>("BooleanFalse",RGB(238,0,0)));
+    tmp.insert(pair<string,RGB>("Integer",RGB(227,207,87)));
+    tmp.insert(pair<string,RGB>("Character",RGB(255,174,185)));
+    tmp.insert(pair<string,RGB>("Real",RGB(255,211,155)));
+    tmp.insert(pair<string,RGB>("String",RGB(255,62,150)));
+    tmp.insert(pair<string,RGB>("Core",RGB(255,97,3)));
+    tmp.insert(pair<string,RGB>("Symbol",RGB(113,198,113)));
+    tmp.insert(pair<string,RGB>("Type",RGB(72,118,255)));
+    tmp.insert(pair<string,RGB>("Generic",RGB(159,121,238)));
+    return tmp;
+  }
+  
+  string defaultCSS()
+  {
+    string tmp;
+    tmp = ".error { border: 1px solid #aaa; box-shadow: 5px 5px 5px #ccc;\
+    margin: 10px; padding: 10px; } ";
+    tmp += ".normalerror { background: #B2DFEE; }";
+    tmp += ".readererror { background: #CDCDB4; }";
+    tmp += ".genericerror { background: #000000; }";
+    tmp += ".macroerror { background: #000000; }";
+    return tmp;
+  }
+  
+  string getCSS()
+  { return "<style type=\"text/css\">" + master.CSS + "</style>"; }
+   
   void init()
   {
     //InitializeNativeTarget();
@@ -412,17 +517,21 @@ namespace Hylas
     master.allow_RedefineWordMacros = true;
     master.allow_RedefinePrePostfixes = true;
     master.allow_RedefineFunctions = false;
-    master.output = plain;
+    master.output = Plain;
+    master.prompt = ((master.output == Plain) ? ">":"<strong>&lt;</strong>");
+    master.Colorscheme = defaultColorscheme();
+    master.CSS = defaultCSS();
+    master.errormode = NormalError;
     init_stdlib();
     init_types();
     init_optimizer();
-    srand(time(NULL)); //For the color generator
+    //For the color generator
     //Engine =  EngineBuilder(Program).create();
   }
   
   void restart()
   {
-    
+    init();
   }
   
   #include "tests.hpp"

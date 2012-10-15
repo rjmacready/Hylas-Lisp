@@ -1,27 +1,7 @@
 (generic structure sequence (Type)
-  (length       i64)
+  (length       word)
+  (capacity     word)
   (data         (pointer Type)))
-
-(generic method length of sequence
-  (inline i64 ((in (sequence Type)))
-    (gep Type in i64 0)))
-
-(generic method nth of sequence
-  (inline Type ((in (sequence Type)) (i64 n))
-    (gep Type in i64 1 i64 n)))
-        
-(generic method member of sequence
-        (function bool ((in (sequence Type)) (obj Type))
-                (def i (i64 0))
-                (while (< i (length in))
-                        (if (eq obj (nth in i))
-                                (ret true)
-                                (ret false))
-                        (inc i))))
-
-(generic method array of sequence
-  (inline Type ((in (sequence Type)))
-    (ret (gep (pointer Type) in i64 1))))
 
 (word < "(make-sequence ")
 (prefix < "(make-sequence ")

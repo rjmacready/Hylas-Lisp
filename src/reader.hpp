@@ -1,30 +1,3 @@
-  map<string,string> WordMacros;
-  map<char,string> Prefixes;
-  map<char,string> Postfixes;
-  
-  void addWordMacro(string word, string replacement);
-  string getMacro(string word);
-  string tryPrefixOrPostfix(string word, bool pre);
-  inline Form* cons(Form* first, Form* second);
-  Form* append(Form* first, Form* second);
-  inline unsigned long length(Form* in);
-  inline Form* nth(Form* in, long location);
-  inline Form* makeForm(string in, bool tag);
-  inline void clear_reader();
-  inline char next_char(FILE* in);
-  inline void unget_char(char c, FILE* in);
-  string next_token(FILE *in);
-  Form* read_tail(FILE *in);
-  bool isArgument(Form* in, map<string,Form*> arguments);
-  Form* editForm(Form* in, map<string,Form*> replacements);
-  Form* expand(Form* in, unsigned char order);
-  Form* expandEverything(Form* in);
-  Form* read(FILE* in);
-  Form* readFile(string filename);
-  Form* readString(string in);
-  string print(Form* in);
-  unsigned char analyze(string input);
-  
   void addWordMacro(string word, string replacement)
   {
     map<string,string>::iterator seeker = WordMacros.find(word);
@@ -180,7 +153,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
   string next_token(FILE *in)
   {
     char ch = next_char(in);
-    char tmp;
+    char tmp = '\0';
     while(isspace(ch)) ch = next_char(in);
     if(ch == '\n')
     {
@@ -352,7 +325,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
   
   Form* read(FILE* in)
   {
-    errormode = ReaderError;
+    master.errormode = ReaderError;
     string token = next_token(in);
     if(token == "(")
       return read_tail(in);
@@ -365,7 +338,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
   
   Form* readFile(string filename)
   {
-    errormode = ReaderError;
+    master.errormode = ReaderError;
     FILE* ptr = fopen(filename.c_str(),"r");
     Form* tmp = read(ptr);
     fclose(ptr);
@@ -375,7 +348,9 @@ whose length is %li.",location,print(in).c_str(),length(in));
   
   Form* readString(string in)
   {
-    errormode = ReaderError;
+    master.errormode = ReaderError;
+    if(in.empty())
+      nerror("Can't read from an empty string.");
     FILE* ptr = fopen("reader.tmp","w+");
     fputs(in.c_str(),ptr);
     fputs("\n",ptr);
@@ -384,13 +359,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
     reseterror();
     return expandEverything(readFile("reader.tmp"));
   }
-  
-  struct RGB
-  {
-    char Red; char Green; char Blue;
-    RGB(char r, char g, char b): Red(r), Green(g), Blue(b) {}
-  };
-               
   
   RGB HSV_to_RGB(float h, float s, float v)
   {
@@ -436,15 +404,16 @@ whose length is %li.",location,print(in).c_str(),length(in));
       g=p;
       b=q;
     }
-    return RGB((unsigned char)(r*256),
-               (unsigned char)(g*256),
-               (unsigned char)(b*256));
+    return RGB((unsigned int)(r*256),
+               (unsigned int)(g*256),
+               (unsigned int)(b*256));
   }
   
-  double golden_ratio = 0.618033988749895;
-  int h = rand();
   RGB genColor()
   {
+    static double golden_ratio = 0.618033988749895;
+    srand(time(NULL));
+    static int h = rand();
     h += golden_ratio;
     h = h%1;
     return HSV_to_RGB(h,0.5,0.95);    
@@ -454,24 +423,75 @@ whose length is %li.",location,print(in).c_str(),length(in));
   {
     return "<div style=\"color:rgb(" + to_string(in.Red)
           + "," + to_string(in.Green)
-          + "," + to_string(in.Blue) + ");\">";
+          + "," + to_string(in.Blue) + ");display:inline;\">";
+  }
+  
+  string matchKeyword(string in)
+  {
+    //Is it a constant?
+    switch(analyze(in))
+    {
+      case BooleanTrue:
+        in = exportRGB(master.Colorscheme.find("BooleanTrue")->second) + in + "</div>";
+        break;
+      case BooleanFalse:
+        in = exportRGB(master.Colorscheme.find("BooleanFalse")->second) + in + "</div>";
+        break;
+      case Integer:
+        in = exportRGB(master.Colorscheme.find("Integer")->second) + in + "</div>";
+        break;
+      case Character:
+        in = exportRGB(master.Colorscheme.find("Character")->second) + in + "</div>";
+        break;
+      case Real:
+        in = exportRGB(master.Colorscheme.find("Real")->second) + in + "</div>";
+        break;
+      case String:
+        in = exportRGB(master.Colorscheme.find("String")->second) + in + "</div>";
+        break;
+      case Symbol:
+      {
+        //Is it a TopLevel or Core function?
+        if((TopLevel.find(in) != TopLevel.end()) ||
+          (Core.find(in) != Core.end()))
+          in = exportRGB(master.Colorscheme.find("Core")->second) + in + "</div>";
+        //Is it a symbol?
+        else if(lookup(in) != NULL)
+          in = exportRGB(master.Colorscheme.find("Symbol")->second) + in + "</div>";
+        //Is it a type?
+        else if(checkTypeExistence(in))
+          in = exportRGB(master.Colorscheme.find("Type")->second) + in + "</div>";
+        else if(checkGenericExistence(in,true) ||
+                checkGenericExistence(in,false))
+          in = exportRGB(master.Colorscheme.find("Generic")->second) + in + "</div>";
+        //lol wtf is it just return it
+        break;
+      }
+    }
+    return in;
   }
   
   string print(Form* in)
   {
+    static unsigned char parenlevel = 0;
     if(in == NULL)
     {
       if(master.output == HTML)
-        return exportRGB(genColor()) + "()</div>";
+      {
+        RGB derp = genColor();
+        return exportRGB(derp) + "<strong>()</strong></div>";
+      }
       else
         return "()";
     }
     else if(islist(in))
     {
       string out;
-      string level = exportRGB(genColor());
+      RGB derp = genColor();
+      string level = exportRGB(derp);
+      parenlevel++;
       if(master.output == HTML)
-        out += level + "(</div>";
+        out += level + "<strong>(</strong></div>";
       else
         out += "(";
       out += print(car(in));
@@ -482,23 +502,15 @@ whose length is %li.",location,print(in).c_str(),length(in));
         out += print(car(in));
         in = cdr(in);
       }
+      parenlevel--;
       if(master.output == HTML)
-        out += level + ")</div>";
+        out += level + "<strong>)</strong></div>";
       else
         out += ")";
       return out;
     }
-    return val(in);
+    return ((master.output==HTML)?matchKeyword(val(in)):val(in));
   }
-  
-  #define BooleanTrue	        0
-  #define BooleanFalse	        1
-  #define Integer	        2
-  #define Character             3
-  #define Real		        4
-  #define Symbol	        5
-  #define String	        6
-  #define Unidentifiable        7
   
   /*unsigned char analyze2(string input)
   {

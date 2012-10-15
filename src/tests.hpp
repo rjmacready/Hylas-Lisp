@@ -185,14 +185,13 @@
                (fib (sub n 2)))))",
       "(fib 30)",
       "\"Uｎ𝓲𝐜σd͢é\"", //The physical length of this string is 21 i8
+      "(def x 10)",
       "\0"
     };
     for(unsigned long i = 0; tests[i] != "\0"; i++)
     {
       out += "Test #" + to_string(i+1) + ":\n> " + tests[i] + "\n\n";
       out += Compile(readString(tests[i])) + "\n\n";
-      for(unsigned long j = 0; j < master.CodeStack.size(); j++)
-        cout << master.CodeStack[j];
       cout << out << endl;
       cin.get();
     }
