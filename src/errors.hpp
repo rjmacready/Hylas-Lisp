@@ -10,10 +10,7 @@
   
   void Unwind()
   {
-    if(testmode)
-      exit(-1);
-    else
-      throw '\0';
+    throw '\0';
   }
   
   string getError()

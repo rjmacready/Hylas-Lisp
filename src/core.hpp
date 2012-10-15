@@ -16,7 +16,7 @@
       out += emitCode(nth(form,2));
       type = latest_type();
     }
-    string fullname = (global?"@":"%")+varname;
+    string fullname = (global?"@":"%")+varname+to_string(ScopeDepth);
     if(global && !typeonly)
       push(fullname + " = global " + type + " zeroinitializer");
     else if(!global && !typeonly)
@@ -543,12 +543,14 @@
     if(length(in) != 2)
       error(in,"(address) takes a single argument");
     string out = emitCode(nth(in,1));
-    Variable* latest = lookup(cutfirst(get_current_res()));
+    Variable* latest = lookup(get_current_res());
+    if(latest == NULL)
+      error(in,"Can't find the variable.");
     //Is the input an LValue? That is, does it have an address?
     if(latest->regtype == LValue)
-      out += constant(get_unique_res(latest_type()+"*"),latest_type(),get_tmp(from_string<unsigned long>(latest->address)));
+      out += constant(get_unique_res(latest_type()+"*"),latest_type()+"*",get_tmp(from_string<unsigned long>(latest->address)));
     else if(latest->regtype == SymbolicRegister)
-      out += constant(get_unique_res(latest_type()+"*"),latest_type(),latest->address);
+      out += constant(get_unique_res(latest_type()+"*"),latest_type()+"*",latest->address);
     else
       error(in,"The input to (address) must be an lvalue (A symbol or the result of (access) or (nth))");
     return out;

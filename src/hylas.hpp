@@ -104,6 +104,7 @@ namespace Hylas
     string address;
     bool constant;
     bool global;
+    long scope_address;
     RegisterType regtype;
   };
   
@@ -138,7 +139,7 @@ namespace Hylas
     vector<string> CodeStack;
   };
   
-  #define ScopeDepth master.SymbolTable.size()-1
+  #define ScopeDepth (master.SymbolTable.size()-1)
   
   Compiler master;
   
@@ -167,7 +168,10 @@ namespace Hylas
     {
       map<string,Variable>::iterator seeker = master.SymbolTable[i].find(in);
       if(seeker != master.SymbolTable[i].end())
+      {
+        (&seeker->second)->scope_address = i;
         return &seeker->second;
+      }
     }
     return NULL;
   }
@@ -203,12 +207,13 @@ namespace Hylas
     return "%res.version" + vnum;
   }
   
-  string get_unique_res_address(string type, string address)
+  string get_unique_res_address(string type, string address, bool symbolic=false)
   {
     string vnum = to_string(++res_version);
     master.SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
     master.SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
-    master.SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = LValue;
+    master.SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = (symbolic?SymbolicRegister:LValue);
+    master.SymbolTable[ScopeDepth]["%res.version" + vnum].scope_address = ((ScopeDepth==-1)?0:ScopeDepth);
     return "%res.version" + vnum;
   }
   
@@ -393,8 +398,8 @@ namespace Hylas
           if(tmp == NULL)
             error_unbound(form);
           else
-            out = load(get_unique_res_address(tmp->type,tmp->address),tmp->type,((tmp->global) ? "@" : "%")
-                + sym + to_string(ScopeDepth));
+            out = load(get_unique_res_address(tmp->type,tmp->address,true),tmp->type,((tmp->global) ? "@" : "%")
+                + sym+to_string(tmp->scope_address));
           break;
         }
       }
