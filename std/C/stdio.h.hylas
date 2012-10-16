@@ -1,0 +1,5 @@
+(foreign C clearerr void (pointer FILE))
+(foreign C ctermid char (pointer char))
+(foreign C fclose int (pointer FILE))
+(foreign C fdopen (pointer FILE) int (pointer char))
+(foreign C feof int (pointer FILE))

@@ -1,0 +1,1 @@
+(foreign C memccpy (pointer i8) (pointer i8) (pointer void) int size_t)

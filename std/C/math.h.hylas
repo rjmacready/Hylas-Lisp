@@ -39,4 +39,4 @@
 (foreign nan double (pointer char))
 
 
-(word HUGE_VAL "hugeval") !Set this to the proper value
+X(word HUGE_VAL "hugeval") !Set this to the proper value

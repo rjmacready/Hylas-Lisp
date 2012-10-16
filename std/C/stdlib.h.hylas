@@ -1,0 +1,11 @@
+!Program termination
+
+(foreign C exit void int)
+(foreign C abort void)
+(foreign C quick_exit void int)
+(foreign C _Exit void exit_code)
+(foreign C atexit int (fnptr void))
+(foreign C at_quick_exit int (fnptr void))
+
+!OS Interaction
+(foreign C getenv (pointer char) (pointer char))

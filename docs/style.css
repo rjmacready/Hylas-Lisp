@@ -1,0 +1,8 @@
+#wrap {
+width:750px;
+margin:0 auto;
+background:#99c;
+}
+
+.cleft { position:relative; width:50%; float:left; }
+.cright { position:relative; width:50%; float:right; }

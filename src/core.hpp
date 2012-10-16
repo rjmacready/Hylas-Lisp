@@ -730,9 +730,10 @@
     addWordMacro("int","i32");
     addWordMacro("long","i64");
     addWordMacro("octet","i8");
-    addWordMacro("eq","seq");
+    addWordMacro("size_t","i"+to_string(sizeof(size_t)));
+    /*addWordMacro("eq","seq");
     addWordMacro("<","slt");
-    addWordMacro("u<","ult");
+    addWordMacro("u<","ult");*/
     //Allowed comparisons for numerical operations
     allowedIntComparisons = {"eq", "ne", "ugt", "uge", "ult", "ule", "sgt"
                              "sge", "slt", "sle"};
