@@ -1,10 +1,10 @@
 (link-with libm)
 
 !Absolute value
-(foreign abs int int)
-(foreign labs long long)
-(foreign fabsf float float)
-(foreign fabs double double)
+(foreign C abs int int)
+(foreign C labs long long)
+(foreign C fabsf float float)
+(foreign C fabs double double)
 
   (inline abs int ((int n)) (abs n))
   (inline abs long ((long n)) (labs n))
@@ -12,31 +12,31 @@
   (inline abs double ((double n)) (fabs n))
 
 !Division
-(foreign div int int int)
-(foreign ldiv long long long)
+(foreign C div int int int)
+(foreign C ldiv long long long)
 
 !Remainder
-(foreign fmodf float float float)
-(foreign fmod double double double)
-(foreign remainderf float float float)
-(foreign remainder double double)
-(foreign remquof float float float (pointer int))
-(foreign remquo double double double (pointer int))
+(foreign C fmodf float float float)
+(foreign C fmod double double double)
+(foreign C remainderf float float float)
+(foreign C remainder double double)
+(foreign C remquof float float float (pointer int))
+(foreign C remquo double double double (pointer int))
 
-(foreign fmaf float float float float)
-(foreign fma double double double double)
+(foreign C fmaf float float float float)
+(foreign C fma double double double double)
 
-(foreign fmaxf float float float)
-(foreign fmax double double double)
+(foreign C fmaxf float float float)
+(foreign C fmax double double double)
 
-(foreign fminf float float float)
-(foreign fmin double double double)
+(foreign C fminf float float float)
+(foreign C fmin double double double)
 
-(foreign fdimf float float float)
-(foreign fdim double double double)
+(foreign C fdimf float float float)
+(foreign C fdim double double double)
 
-(foreign nanf float (pointer char))
-(foreign nan double (pointer char))
+(foreign C nanf float (pointer char))
+(foreign C nan double (pointer char))
 
 
-X(word HUGE_VAL "hugeval") !Set this to the proper value
+(word HUGE_VAL "hugeval") !Set this to the proper value

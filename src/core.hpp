@@ -85,18 +85,18 @@
     + " " + get_res(address) + ", " + get_current_res();
   }
   
-  string add(Form* form)                {return generic_math(form,"add");}
-  string fadd(Form* form)		{return generic_math(form,"fadd");}
-  string sub(Form* form)                {return generic_math(form,"sub");}
-  string fsub(Form* form)               {return generic_math(form,"fsub");}
-  string mul(Form* form)		{return generic_math(form,"mul");}
-  string fmul(Form* form)		{return generic_math(form,"fmul");}
-  string udiv(Form* form)		{return generic_math(form,"udiv");}
-  string sdiv(Form* form)		{return generic_math(form,"sdiv");}
-  string fdiv(Form* form)		{return generic_math(form,"fdiv");}
-  string urem(Form* form)		{return generic_math(form,"urem");}
-  string srem(Form* form)		{return generic_math(form,"srem");}
-  string frem(Form* form)		{return generic_math(form,"frem");}
+  string add(Form* form)                { return generic_math(form,"add");   }
+  string fadd(Form* form)		{ return generic_math(form,"fadd"); }
+  string sub(Form* form)                { return generic_math(form,"sub");  }
+  string fsub(Form* form)               { return generic_math(form,"fsub"); }
+  string mul(Form* form)		{ return generic_math(form,"mul");  }
+  string fmul(Form* form)		{ return generic_math(form,"fmul"); }
+  string udiv(Form* form)		{ return generic_math(form,"udiv"); }
+  string sdiv(Form* form)		{ return generic_math(form,"sdiv"); }
+  string fdiv(Form* form)		{ return generic_math(form,"fdiv"); }
+  string urem(Form* form)		{ return generic_math(form,"urem"); }
+  string srem(Form* form)		{ return generic_math(form,"srem"); }
+  string frem(Form* form)		{ return generic_math(form,"frem"); }
   
   string icmp(Form* form)
   {
@@ -142,6 +142,194 @@
 "', while the second was of type '",latest_type(),"'.");
     return out + get_unique_res("i1") + " = fcmp " + cmp_code + " "
     + latest_type() + " " + get_res(address) + ", " + get_current_res();
+  }
+  
+  string generic_bitop(Form* form, string opcode)
+  {
+    string out = emitCode(nth(form,1));
+    unsigned long address = res_version;
+    out += emitCode(nth(form,2));
+    if(latest_type() != res_type(get_res(address)))
+      error(form,"Both arguments to (",opcode,") must be of the same type.");
+    return out + get_unique_res(latest_type()) + " = " + opcode + " " + latest_type()
+    + " " + get_res(address) + ", " + get_current_res();
+  }
+  
+  string shl(Form* form)                { return generic_bitop(form,"shl");  }
+  string lshr(Form* form)               { return generic_bitop(form,"lshr"); }
+  string ashr(Form* form)               { return generic_bitop(form,"ashr"); }
+  string bit_and(Form* form)            { return generic_bitop(form,"and");  }
+  string bit_or(Form* form)             { return generic_bitop(form,"or");   }
+  string bit_xor(Form* form)            { return generic_bitop(form,"xor");  }
+  
+  /*
+  string byte-swap(Form* form)
+  { }
+  string count-ones(Form* form)
+  { }
+  string count-leading-zeros(Form* form)
+  { }
+  string count-trailing-zeros(Form* form)
+  { }
+  */
+  
+  string truncate(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    if(isInteger(latest_type()))
+    {
+      //Truncate in integer mode
+      string to = printTypeSignature(nth(form,2));
+      if(!isInteger(to))
+        error(form,"The first argument to (truncate) was an integer, so the \
+second argument must be an integer of a lesser bit width. Here, the second \
+argument was '",to,"'.");
+      if(!(width(latest_type()) > width(to)))
+        error(form,"The bit width of the first argument to (truncate) must be \
+greater than the bit width of the second argument. In this case, they were ",
+width(latest_type())," and ",width(to),", respectively.");
+      return out + get_unique_res(to) + " = trunc " + latest_type() + " "
+            + get_current_res() + " to " + to;
+    }
+    else if(isCoreType(latest_type())) //Automatically a float
+    {
+      //Truncate in FP mode
+      string to = printTypeSignature(nth(form,2));
+      if(!isCoreType(to))
+        error(form,"The first argument to (truncate) was a float, so the \
+second argument must be a float of a lesser bit width. Here, the second \
+argument was '",to,"'.");
+      if(!(fpwidth(latest_type()) > fpwidth(to)))
+        error(form,"The bit width of the first argument to (truncate) must be \
+greater than the bit width of the second argument. In this case, they were ",
+width(latest_type())," and ",width(to),", respectively.");
+      return out + get_unique_res(to) + " = fptrunc " + latest_type() + " "
+            + get_current_res() + " to " + to;
+    }
+    else
+      error(form,"The first argument to truncate must be an integer or a \
+floating point type, but an object of type ",latest_type()," was given.");
+    return "";
+  }
+  
+  string extend(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    if(isInteger(latest_type()))
+    {
+      //Extend in integer mode
+      string to = printTypeSignature(nth(form,2));
+      if(!isInteger(to))
+        error(form,"The first argument to (extend) was an integer, so the \
+second argument must be an integer of a lesser bit width. Here, the second \
+argument was '",to,"'.");
+      if(!(width(latest_type()) < width(to)))
+        error(form,"The bit width of the first argument to (extend) must be \
+greater than the bit width of the second argument. In this case, they were ",
+width(latest_type())," and ",width(to),", respectively.");
+      return out + get_unique_res(to) + " = sext " + latest_type() + " "
+            + get_current_res() + " to " + to;
+    }
+    else if(isCoreType(latest_type())) //Automatically a float
+    {
+      //Extend in FP mode
+      string to = printTypeSignature(nth(form,2));
+      if(!isCoreType(to))
+        error(form,"The first argument to (truncate) was a float, so the \
+second argument must be a float of a lesser bit width. Here, the second \
+argument was '",to,"'.");
+      if(!(fpwidth(latest_type()) < fpwidth(to)))
+        error(form,"The bit width of the first argument to (truncate) must be \
+greater than the bit width of the second argument. In this case, they were ",
+width(latest_type())," and ",width(to),", respectively.");
+      return out + get_unique_res(to) + " = fpext " + latest_type() + " "
+            + get_current_res() + " to " + to;
+    }
+    else
+      error(form,"The first argument to truncate must be an integer or a \
+floating point type, but an object of type ",latest_type()," was given.");
+    return "";
+  }
+  
+  string zextend(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string to = printTypeSignature(nth(form,2));
+    if(!isInteger(latest_type()) || !isInteger(to))
+      error(form,"Both arguments to (zextend) must be integers.");
+    if(!(width(latest_type()) < width(to)))
+      error(form,"The bit width of the first argument to (zextend) must be \
+lesser than the bit width of the second argument. In this case, they were ",
+width(latest_type())," and ",width(to),", respectively.");
+    return out + get_unique_res(to) + " = zext " + latest_type() + " "
+           + get_current_res() + " to " + to;
+  }
+  
+  string sextend(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string to = printTypeSignature(nth(form,2));
+    if(!isInteger(latest_type()) || !isInteger(to))
+      error(form,"Both arguments to (sextend) must be integers.");
+    if(!(width(latest_type()) < width(to)))
+      error(form,"The bit width of the first argument to (sextend) must be \
+lesser than the bit width of the second argument. In this case, they were ",
+width(latest_type())," and ",width(to),", respectively.");
+    return out + get_unique_res(to) + " = sext " + latest_type() + " "
+           + get_current_res() + " to " + to;
+  }
+  
+  /*
+  string float_int_convert(Form* form, bool to_float, bool signed)
+  { }
+  string floattouint(Form* form)
+  { }
+  string floattosint(Form* form)
+  { }
+  string uinttofp(Form* form)
+  { }
+  string sinttofp(Form* form)
+  { }
+  string floattohalf(Form* form)
+  { }
+  string halftofloat(Form* form)
+  { }
+  */
+  
+  string ptrtoint(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string to = printTypeSignature(nth(form,2));
+    if(latest_type()[latest_type().length()-1] != '*')
+      error(form,"The first argument to (pointer->integer) must be a pointer,\
+but an object of type '",latest_type(),"' was given.");
+    if(!isInteger(to))
+      error(form,"The first second to (pointer->integer) must be an integer,\
+but an object of type '",latest_type(),"' was given.");
+    return out + get_unique_res(to) + " = ptrtoint " + latest_type() + " "
+           + get_current_res() + " to " + to;
+  }
+
+  string inttoptr(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string to = printTypeSignature(nth(form,2));
+    if(!isInteger(latest_type()))
+      error(form,"The first second to (integer->pointer) must be a pointer,\
+but an object of type '",latest_type(),"' was given.");
+    if(to[to.length()-1] != '*')
+      error(form,"The first argument to (integer->pointer) must be an integer,\
+but an object of type '",latest_type(),"' was given.");
+    return out + get_unique_res(to) + " = inttoptr " + latest_type() + " "
+           + get_current_res() + " to " + to;
+  }
+  
+  string bitcast(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string to = printTypeSignature(nth(form,2));
+    return out + get_unique_res(to) + " = bitcast " + latest_type() + " "
+           + get_current_res() + " to " + to;
   }
   
   string access(Form* form)
@@ -205,11 +393,11 @@
     return out;
   }
   
-  string simple_if(Form* form)
+  string flow(Form* form)
   {
     string out = emitCode(nth(form,1));
     if(latest_type() != "i1")
-      error(form,"The test (Second argument) of an (if) form must evaluate to a boolean (i1) value.");
+      error(form,"The test (Second argument) of a (flow) form must evaluate to a boolean (i1) value.");
     else
       out += "br i1 " + get_current_res() + ",";
     out += " label " + get_unique_label();
@@ -226,14 +414,14 @@
     return out;
   }
   
-  string flow(Form* form)
+  string simple_if(Form* form)
   {
     string out = emitCode(nth(form,1));
     string true_branch_type;
     unsigned long cond_address, true_address, false_address;
     cond_address = res_version;
     if(latest_type() != "i1")
-      error(form,"The test (Second argument) of a (flow) form must evaluate to a boolean (i1) value.");
+      error(form,"The test (Second argument) of an (if) form must evaluate to a boolean (i1) value.");
     else
       out += "br i1 " + get_current_res() + ",";
     out += " label " + get_unique_label() + ", label ";
@@ -251,7 +439,7 @@
     out += "br label " + get_label(label_version) + "\n";
     out += functional_label(get_label(label_version));
     if(true_branch_type != latest_type())
-      error(form,"Both branches of a (flow) statement must evaluate to the same type. Here, the true branch returns a '",
+      error(form,"Both branches of an (if) statement must evaluate to the same type. Here, the true branch returns a '",
             true_branch_type,"', while the false branch returns a '",latest_type(),"'.");
     else
       out += get_unique_res(true_branch_type) + " = phi " + true_branch_type + " ["
@@ -279,21 +467,38 @@
   string foreign(Form* form)
   {
     Lambda newfn;
-    string raw_name = val(nth(form,1));
+    string name_style = val(nth(form,1));
+    string raw_name = val(nth(form,2));
+    if(name_style == "C")
+    {
+      //Unimplemented
+    }
+    else if(name_style == "C++")
+    {
+      //Unimplemented
+    }
+    else
+      error(form,"The first argument to foreign must either be 'C' (For no name mangling) or 'C++' (For C++ compatible mangling of function names).");
     newfn.name = raw_name;
-    newfn.ret_type = print(printTypeSignature(nth(form,2)));
-    newfn.fn_ptr_type = newfn.ret_type + "(";
-    for(unsigned long i = 0; i < length(form); i++)
+    newfn.ret_type = print(printTypeSignature(nth(form,3)));
+    newfn.fn_ptr_type += newfn.ret_type + "(";
+    for(unsigned long i = 4; i < length(form); i++)
     {
       if(isatom(nth(form,i)))
       {
         if(val(nth(form,i)) == "...")
+        {
           newfn.fn_ptr_type += "...,";
+          continue;
+        }
       }
-      else
-        newfn.fn_ptr_type += printTypeSignature(nth(form,i)) + ",";
+      newfn.fn_ptr_type += printTypeSignature(nth(form,i)) + ",";
     }
-    newfn.fn_ptr_type = ((cdr(cdr(cdr(form))) == NULL)?newfn.fn_ptr_type+")*":cutlast(newfn.fn_ptr_type)+")*");
+    cout << length(form) << endl;
+    if(length(form) == 4)
+      newfn.fn_ptr_type += ")*";
+    else
+      newfn.fn_ptr_type = cutlast(newfn.fn_ptr_type) + ")*";
     string rem = removeReturn(newfn.fn_ptr_type);
     map<string,MetaFunction>::iterator seeker = FunctionTable.find(newfn.name);
     if(seeker != FunctionTable.end())
@@ -313,11 +518,11 @@
       new_metafn.versions.push_back(newfn);
       FunctionTable[newfn.name] = new_metafn;
     }
-    push("declare " + newfn.ret_type + " @" + raw_name + rem);
+    push("declare " + newfn.ret_type + " @" + raw_name + cutlast(rem));
     /*string arguments
     push("define " + newfn.ret_type +  " @" + newfn.name + rem + "alwaysinline \n{\n%0 = call " + newfn.ret_type + " @" + raw_name + 
          + newfn.ret_type +*/
-    return constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,newfn.name);
+    return constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,"@"+newfn.name);
   }
   
   string embed_llvm(Form* form)
@@ -723,7 +928,6 @@
     Core["import"]           = &import;
     //Word macros
     addWordMacro("bool","i1");
-    addWordMacro("char","i8");
     addWordMacro("byte","i8");
     addWordMacro("octet","i8");
     addWordMacro("short","i16");
@@ -731,6 +935,26 @@
     addWordMacro("long","i64");
     addWordMacro("octet","i8");
     addWordMacro("size_t","i"+to_string(sizeof(size_t)));
+    //Architectures
+    #if defined(__alpha__) || defined(__alpha) || defined(_M_ALPHA)
+    addWordMacro("System.architecture","Alpha");
+    #elif defined(__amd64__) || defined(_M_AMD64)
+    addWordMacro("System.architecture","AMD64");
+    #elif defined(__arm__) || defined(__thumb__) || defined(__TARGET_ARCH_ARM) \
+           || defined(_ARM) || defined(_M_ARM) || defined(_M_ARMT)
+    addWordMacro("System.architecture","ARM");
+    #elif defined(__convex__)
+    addWordMacro("System.architecture","Convex");
+    #elif defined(__hppa__) || defined(__HPPA__)
+    addWordMacro("System.architecture","HP/PA RISC");
+    #elif defined(i386) || defined(__i386) || defined(_M_I86) || \
+          defined(__X86__) || defined(_X86_) || defined(__THW_INTEL__) || \
+          defined(__I86__) || defined(__INTEL__)
+    addWordMacro("System.architecture","Intel x86");
+    #elif defined(__ia64__) || defined(__ia64) || defined(_M_IA64) || \
+          defined(__itanium__)
+    addWordMacro("System.architecture","Intel Itanium");
+    #endif
     /*addWordMacro("eq","seq");
     addWordMacro("<","slt");
     addWordMacro("u<","ult");*/

@@ -89,7 +89,14 @@
   }
   
   string removeReturn(string in)
-  { return string(in,in.find("(")); }
+  {
+    string out;
+    if(in.find("(") != string::npos)
+      out = string(in,in.find("("));
+    else
+      nerror("Couldn't find a return type to remove from the pointer signature '",in,"'.");
+    return out;
+  }
   
   string defineFunction(Form* form, fnType fn_type, bool inlining)
   {

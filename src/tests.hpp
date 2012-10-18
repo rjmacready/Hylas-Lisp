@@ -188,7 +188,9 @@
       "(def x 10)",
       "(address x)",
       "x",
-      "(foreign printf i32 (pointer i8) ...)",
+      "(foreign C printf i32 (pointer i8) ...)",
+      "(foreign C exit i1 i32)",
+      "(foreign C malloc (pointer i8) i32)",
       "\0"
     };
     for(unsigned long i = 0; tests[i] != "\0"; i++)

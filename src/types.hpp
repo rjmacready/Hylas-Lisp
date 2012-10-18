@@ -25,14 +25,33 @@
   map<string,Type> BasicTypes;
   vector<pair<string,Generic> > Generics;
   
+  unsigned int width(string integer)
+  {
+    return from_string<int>(string(integer,1,integer.length()-1));
+  }
+  
   bool isInteger(string in)
   {
-    long tmp = from_string<long>(string(in,1,in.length()-1));
-    return ((in[0] == 'i') && ((tmp >= 1) && (tmp < (pow(2,23)-1))));
+    unsigned int bit_width = from_string<long>(string(in,1,in.length()-1));
+    return ((in[0] == 'i') && ((bit_width >= 1) && (bit_width < (pow(2,23)-1))));
+  }
+  
+  unsigned int fpwidth(string in)
+  {
+    //Doesn't return the width of a float, rather, returns its place in the
+    //CoreTypes table, for <, >, <= etc. comparison
+    for(unsigned long i = 0; i < CoreTypes.size(); i++)
+    {
+      if(CoreTypes[i] == in)
+        return i;
+    }
+    return 0;
   }
   
   bool isCoreType(string in)
   {
+    if(in == "...")
+      return false;
     if(isInteger(in))
       return true;
     for(unsigned int i = 0; i < CoreTypes.size(); i++)

@@ -1,1 +1,1 @@
-(add 10 20)
+(foreign C printf i32 (pointer i8) ...)

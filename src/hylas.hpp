@@ -214,7 +214,7 @@ namespace Hylas
     master.SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
     master.SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = (symbolic?SymbolicRegister:LValue);
     master.SymbolTable[ScopeDepth]["%res.version" + vnum].scope_address = ((ScopeDepth==-1)?0:ScopeDepth);
-    return "%res.version" + vnum;
+    return "; <with address " + address + ">\n%res.version" + vnum;
   }
   
   inline string get_res(long v)
