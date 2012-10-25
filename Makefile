@@ -1,12 +1,12 @@
-CC = g++
-CXXFLAGS = -std=c++0x -Wall -Wextra -Werror
-LDFLAGS = `llvm-config --libs engine --cxxflags --ldflags`
+CXX = g++
+CXXFLAGS = -std=c++0x -Wall -Wextra -Werror -ggdb -fPIC -rdynamic -g
+LLVMFLAGS = `llvm-config --cppflags --ldflags --libs core jit native asmparser asmprinter linker`
 SRCDIR = src
 SOURCES = $(SRCDIR)/*.cpp
 default:hylas
 
 hylas:
-	$(CC) $(SOURCES) -o hylas $(CXXFLAGS)
+	$(CXX) $(SOURCES) -o hylas.o $(CXXFLAGS) $(LLVMFLAGS)
 
 clean:
-	rm hylas
+	rm hylas.o

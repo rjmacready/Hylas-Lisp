@@ -164,6 +164,8 @@
         10)",
       "(function test i1 ((n i64) (m i64))\
         (icmp n eq m))",
+      "(function test i1 ((n double) (m double))\
+        (fcmp n oeq m))",
       "(function test2 i1 ()\
         (icmp 2 eq 2))",      //Testing Function calling
       //"(test)",
@@ -179,7 +181,7 @@
           true\
           false))",
       "(recursive fib i64 ((n i64))\
-        (flow (icmp n ult 2)\
+        (if (icmp n ult 2)\
           n\
           (add (fib (sub n 1))\
                (fib (sub n 2)))))",
@@ -188,16 +190,19 @@
       "(def x 10)",
       "(address x)",
       "x",
-      "(foreign C printf i32 (pointer i8) ...)",
       "(foreign C exit i1 i32)",
-      "(foreign C malloc (pointer i8) i32)",
+      "(foreign C printf i32 (pointer i8) ...)",
+      //"(foreign C malloc (pointer i8) i32)",
+      "(printf \"Hello from LLVM! This is an integer: %i. This is a float: %f\" 37 3.1415)",
+      "(link \"curses\")",
+      //"(foreign C printw i32 (pointer i8) ...)",
       "\0"
     };
     for(unsigned long i = 0; tests[i] != "\0"; i++)
     {
-      out += "Test #" + to_string(i+1) + ":\n> " + tests[i] + "\n\n";
-      out += Compile(readString(tests[i])) + "\n\n";
-      cout << out << endl;
+      cerr << "\n\nTest #" << to_string(i+1) << ":\n> " << tests[i] << "\n\n";
+      JIT(Compile(readString(tests[i])));
+      Run();
       cin.get();
     }
     testmode = false;

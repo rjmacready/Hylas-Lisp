@@ -24,11 +24,11 @@
     if(!typeonly)
     {
       out += store(type,get_current_res(),fullname);
-      master.SymbolTable[ScopeDepth][varname].type = type;
-      master.SymbolTable[ScopeDepth][varname].constant = false;
-      master.SymbolTable[ScopeDepth][varname].global = global;
-      master.SymbolTable[ScopeDepth][varname].address = fullname;
-      master.SymbolTable[ScopeDepth][varname].regtype = SymbolicRegister;
+      master.SymbolTable[ScopeDepth].vars[varname].type = type;
+      master.SymbolTable[ScopeDepth].vars[varname].constant = false;
+      master.SymbolTable[ScopeDepth].vars[varname].global = global;
+      master.SymbolTable[ScopeDepth].vars[varname].address = fullname;
+      master.SymbolTable[ScopeDepth].vars[varname].regtype = SymbolicRegister;
     }
     else
       out = constant(get_unique_res("i1"),"i1","true");
@@ -86,17 +86,17 @@
   }
   
   string add(Form* form)                { return generic_math(form,"add");   }
-  string fadd(Form* form)		{ return generic_math(form,"fadd"); }
+  string fadd(Form* form)               { return generic_math(form,"fadd"); }
   string sub(Form* form)                { return generic_math(form,"sub");  }
   string fsub(Form* form)               { return generic_math(form,"fsub"); }
-  string mul(Form* form)		{ return generic_math(form,"mul");  }
-  string fmul(Form* form)		{ return generic_math(form,"fmul"); }
-  string udiv(Form* form)		{ return generic_math(form,"udiv"); }
-  string sdiv(Form* form)		{ return generic_math(form,"sdiv"); }
-  string fdiv(Form* form)		{ return generic_math(form,"fdiv"); }
-  string urem(Form* form)		{ return generic_math(form,"urem"); }
-  string srem(Form* form)		{ return generic_math(form,"srem"); }
-  string frem(Form* form)		{ return generic_math(form,"frem"); }
+  string mul(Form* form)                { return generic_math(form,"mul");  }
+  string fmul(Form* form)               { return generic_math(form,"fmul"); }
+  string udiv(Form* form)               { return generic_math(form,"udiv"); }
+  string sdiv(Form* form)               { return generic_math(form,"sdiv"); }
+  string fdiv(Form* form)               { return generic_math(form,"fdiv"); }
+  string urem(Form* form)               { return generic_math(form,"urem"); }
+  string srem(Form* form)               { return generic_math(form,"srem"); }
+  string frem(Form* form)               { return generic_math(form,"frem"); }
   
   string icmp(Form* form)
   {
@@ -132,7 +132,7 @@
       { member = true; break; }
     }
     if(!member)
-      error(form,"The integer comparison code'",cmp_code,"' does not exist.");
+      error(form,"The floating point comparison code'",cmp_code,"' does not exist.");
     out += emitCode(nth(form,1));
     unsigned long address = res_version;
     out += emitCode(nth(form,3));
@@ -162,11 +162,35 @@
   string bit_or(Form* form)             { return generic_bitop(form,"or");   }
   string bit_xor(Form* form)            { return generic_bitop(form,"xor");  }
   
+  
+  string byte_swap(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string type = latest_type();
+    if(!isInteger(type))
+      error(form,"The argument to (byte-swap) must be an integer with an even \
+number of bytes, but an object of type '",type,"' was given.");
+    if(!(width(type) % 16 == 0))
+      error(form,"The argument to (byte-swap) must be an integer with an even \
+number of bytes, but an integer with a width of ",to_string(width(type))," was given.");
+    push("declare " + type + " @llvm.bswap." + type + "(" + type + " %n)");
+    return out + get_unique_res(type) + " = call " + type + " @llvm.bswap." + type + "(" + type
+           + " " + get_res(res_version-1);
+  }
+  
+  string count_ones(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string type = latest_type();
+    if(!isInteger(type))
+      error(form,"The argument to (count-ones) must be an integer, but an \
+object of type '",type,"' was given.");
+    push("declare " + type + " = call " + type + " @llvm.ctpop." + type + "(" + type + " %n)");
+    return out + get_unique_res(type) + " = @llvm.ctpop." + type + "(" + type
+           + " " + get_res(res_version-1);
+  }
+  
   /*
-  string byte-swap(Form* form)
-  { }
-  string count-ones(Form* form)
-  { }
   string count-leading-zeros(Form* form)
   { }
   string count-trailing-zeros(Form* form)
@@ -280,15 +304,9 @@ width(latest_type())," and ",width(to),", respectively.");
   }
   
   /*
-  string float_int_convert(Form* form, bool to_float, bool signed)
+  string floattoint(Form* form, bool to_float, bool signed)
   { }
-  string floattouint(Form* form)
-  { }
-  string floattosint(Form* form)
-  { }
-  string uinttofp(Form* form)
-  { }
-  string sinttofp(Form* form)
+  string inttofloat(Form* form)
   { }
   string floattohalf(Form* form)
   { }
@@ -356,15 +374,15 @@ but an object of type '",latest_type(),"' was given.");
           member_type = checker->second.second;  
         }
         else
-	{
+        {
           printf("ERROR: Type '%s' does not have the member '%s'",type_cdr.c_str(),member.c_str());
-	  Unwind();
-	}
+          Unwind();
+        }
       }
       else
       {
         printf("ERROR: Type '%s' not a structure.",type_cdr.c_str());
-	Unwind();
+        Unwind();
       }
     }
     //Find in Generics
@@ -482,6 +500,10 @@ but an object of type '",latest_type(),"' was given.");
     newfn.name = raw_name;
     newfn.ret_type = print(printTypeSignature(nth(form,3)));
     newfn.fn_ptr_type += newfn.ret_type + "(";
+    newfn.nargs = length(form)-1;
+    newfn.fastcc = false;
+    newfn.tco = false;
+    newfn.lining = false;
     for(unsigned long i = 4; i < length(form); i++)
     {
       if(isatom(nth(form,i)))
@@ -494,7 +516,7 @@ but an object of type '",latest_type(),"' was given.");
       }
       newfn.fn_ptr_type += printTypeSignature(nth(form,i)) + ",";
     }
-    cout << length(form) << endl;
+    //cout << length(form) << endl;
     if(length(form) == 4)
       newfn.fn_ptr_type += ")*";
     else
@@ -522,13 +544,15 @@ but an object of type '",latest_type(),"' was given.");
     /*string arguments
     push("define " + newfn.ret_type +  " @" + newfn.name + rem + "alwaysinline \n{\n%0 = call " + newfn.ret_type + " @" + raw_name + 
          + newfn.ret_type +*/
+    //Function* ExternalFunction = master.Program->getOrInsertFunction(newfn->name,FunctionType::get());
     return constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,"@"+newfn.name);
   }
   
   string embed_llvm(Form* form)
   {
     string out = val(nth(form,1));
-    return cutfirst(cutlast(out));
+    push(cutfirst(cutlast(out)));
+    return constant(get_unique_res("i1"),"i1","true");
   }
   
   string define_function(Form* form)
@@ -785,7 +809,8 @@ but an object of type '",latest_type(),"' was given.");
   {
     if(cdr(in) == NULL)
       error(in,"No Assembly code provided.");
-    return (string)"module asm \"" + cutfirst(cutlast(val(cadr(in)))) + "\"\n";
+    push((string)"module asm \"" + cutfirst(cutlast(val(cadr(in)))) + "\"\n");
+    return constant(get_unique_res("i1"),"i1","true");
   }
   
   string inline_asm(Form* in)
@@ -872,22 +897,49 @@ but an object of type '",latest_type(),"' was given.");
     return "";
   }
   
+  /*string add_library_paths(Form* form)
+  {
+    string pathname = cutfirst(cutlast(val(nth(form,1))));
+    master.Loader->addPath(pathname);
+    return constant(get_unique_res("i1"),"i1","true");
+  }*/
+  
+  string link_with_library(Form* form)
+  {
+    string libname = cutfirst(cutlast(val(nth(form,1))));
+    bool derp = true;
+    master.Program->addLibrary(libname);
+    if(master.Loader->LinkInLibrary(libname,derp))
+      nerror(master.Loader->getLastError());
+    /*bool herp = sys::DynamicLibrary::LoadLibraryPermanently(libname.c_str());
+    if(derp == false || herp == false)
+      error(form,"Error loading the library '",libname,"'.");*/
+    vector<string> libs = master.Program->getLibraries();
+    for(unsigned long i = 0; i < libs.size(); i++)
+    {
+      cerr << "Using library: " << libs[i] << endl;
+    }
+    return constant(get_unique_res("i1"),"i1","true");
+  }  
+  
   void init_stdlib()
   {
     Scope new_scope;
     master.SymbolTable.push_back(new_scope);
     //Init Core
     TopLevel["main"]         = &main_fn;
-    TopLevel["LLVM"]         = &embed_llvm;
     TopLevel["def"]          = &def_global;
     TopLevel["def-as"]       = &def_as_global;
     TopLevel["type"]         = &makeType;
     TopLevel["structure"]    = &makeStructure;
     TopLevel["generic"]      = &genericInterface;
-    TopLevel["asm"]          = &toplevel_asm;
+    Core["asm"]              = &toplevel_asm;
+    Core["inline-asm"]       = &inline_asm;
     TopLevel["word"]         = &word;
     TopLevel["prefix"]       = &prefix;
     TopLevel["postfix"]      = &postfix;
+    Core["LLVM"]             = &embed_llvm;
+    Core["inline-LLVM"]      = &embed_llvm;
     Core["function"]         = &define_function;
     Core["recursive"]        = &define_recursive;
     Core["fast"]             = &define_fast;
@@ -924,8 +976,8 @@ but an object of type '",latest_type(),"' was given.");
     Core["store"]            = &mem_store;
     Core["load"]             = &mem_load;
     Core["address"]          = &address;
-    Core["asm"]              = &inline_asm;
     Core["import"]           = &import;
+    Core["link"]             = &link_with_library;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("byte","i8");

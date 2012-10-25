@@ -1,1 +1,1 @@
-(foreign C printf i32 (pointer i8) ...)
+(link "curses")

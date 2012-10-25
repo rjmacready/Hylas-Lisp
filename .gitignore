@@ -4,3 +4,5 @@
 *.a
 *.s
 *.bc
+.fuse_hidden*
+docs

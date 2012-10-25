@@ -12,37 +12,36 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <stdarg.h>
+#include <exception>
 #include <regex>
 
-/*#include "llvm/DerivedTypes.h"
+#include "llvm/DerivedTypes.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JIT.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
+#include "llvm/Linker.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Analysis/Passes.h"
+#include "llvm/Assembly/PrintModulePass.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Transforms/Scalar.h"
-#include "llvm/Support/IRBuilder.h"
+#include "llvm/Transforms/IPO.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/ADT/Twine.h"
-#include "llvm/Assembly/Parser.h"*/
-
+#include "llvm/Assembly/Parser.h"
+#include "llvm/Support/DynamicLibrary.h"
 
 namespace Hylas
 {
   using namespace std;
-  //using namespace llvm;
+  using namespace llvm;
   
-  /*Module* Program;
   LLVMContext& Context = getGlobalContext();
-  IRBuilder<> Builder(Context);
-  PassManager Passes(Program);
-  ExecutionEngine* Engine;*/
   
   #define List  false
   #define Atom  true
@@ -69,8 +68,6 @@ namespace Hylas
   #define cdr(x)        (x->Cdr)
   #define cadr(x)       (car(cdr(x)))
   #define cddr(x)       (cdr(cdr(x)))
-  
-  typedef void (*entryfnptr)();
   
   void Unwind();
   Form* cons(Form* first, Form* second);
@@ -107,20 +104,30 @@ namespace Hylas
     long scope_address;
     RegisterType regtype;
   };
-  
+
   struct RGB
   {
     unsigned int  Red; unsigned int Green; unsigned int Blue;
     RGB(unsigned int r, unsigned int g, unsigned int b): Red(r), Green(g), Blue(b) {}
   };
   
-  typedef map<string,Variable> Scope;
-  typedef vector<Scope> ST;
+  struct Scope
+  {
+    map<string,Variable> vars;
+    vector<string> labels;
+  };
+
+  typedef vector<Scope> Stack;
   
   enum TextOutput {Plain, HTML};
   
   struct Compiler
   {
+    Module* Program;
+    PassManager Passes;
+    ExecutionEngine* Engine;
+    string llvm_errstr;
+    Linker* Loader;
     //General Behaviour options
     bool allow_RedefineMacros;
     bool allow_RedefineFunctions;
@@ -135,13 +142,15 @@ namespace Hylas
     string errmsg;
     unsigned char errormode;
     //Shit
-    ST SymbolTable;
+    Stack SymbolTable;
     vector<string> CodeStack;
   };
   
   #define ScopeDepth (master.SymbolTable.size()-1)
   
   Compiler master;
+  
+  #include "include/core.hpp"
   
   inline void push(string in)
   {
@@ -166,8 +175,8 @@ namespace Hylas
   {
     for(long i = ScopeDepth; i != -1; i--)
     {
-      map<string,Variable>::iterator seeker = master.SymbolTable[i].find(in);
-      if(seeker != master.SymbolTable[i].end())
+      map<string,Variable>::iterator seeker = master.SymbolTable[i].vars.find(in);
+      if(seeker != master.SymbolTable[i].vars.end())
       {
         (&seeker->second)->scope_address = i;
         return &seeker->second;
@@ -203,17 +212,17 @@ namespace Hylas
   string get_unique_res(string type)
   {
     string vnum = to_string(++res_version);
-    master.SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
+    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].type = type;
     return "%res.version" + vnum;
   }
   
   string get_unique_res_address(string type, string address, bool symbolic=false)
   {
     string vnum = to_string(++res_version);
-    master.SymbolTable[ScopeDepth]["%res.version" + vnum].type = type;
-    master.SymbolTable[ScopeDepth]["%res.version" + vnum].address = address;
-    master.SymbolTable[ScopeDepth]["%res.version" + vnum].regtype = (symbolic?SymbolicRegister:LValue);
-    master.SymbolTable[ScopeDepth]["%res.version" + vnum].scope_address = ((ScopeDepth==-1)?0:ScopeDepth);
+    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].type = type;
+    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].address = address;
+    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].regtype = (symbolic?SymbolicRegister:LValue);
+    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].scope_address = ((ScopeDepth==-1)?0:ScopeDepth);
     return "; <with address " + address + ">\n%res.version" + vnum;
   }
   
@@ -268,8 +277,8 @@ namespace Hylas
   
   void dump_scope(unsigned long s)
   {
-    for(map<string,Variable>::iterator i = master.SymbolTable[s].begin();
-        i != master.SymbolTable[s].end(); i++)
+    for(map<string,Variable>::iterator i = master.SymbolTable[s].vars.begin();
+        i != master.SymbolTable[s].vars.end(); i++)
     {
       printf("\n %s : %s",i->first.c_str(),i->second.type.c_str());
     }
@@ -421,7 +430,13 @@ namespace Hylas
     return out+"\n";
   }
   
-  string Compile(Form* form)
+  struct IR
+  {
+    string      assembly;
+    string      ret_type;
+  };
+  
+  IR Compile(Form* form)
   {
     string out;
     string tmp;
@@ -450,37 +465,47 @@ namespace Hylas
       tmp += master.CodeStack[i] + "\n";
     out = "define " + latest_type() + " @entry(){\n" + out + "\nret " + latest_type() + " " + get_current_res() + "\n}";
     out = tmp + out;
+    string type = latest_type();
+    //cerr << "Code:\n" << out << endl;
     master.CodeStack.clear();
-    tmp_version = -1;
-    res_version = -1;
-    label_version = -1;
     clear_reader();
-    return out;
+    return {out,type};
   }
   
-  string JIT(string code)
+  string JIT(IR code)
   {
-    /*SMDiagnostic errors;
-    ParseAssemblyString(in.c_str(),Program,errors,Context);
+    SMDiagnostic errors;
+    string parser_errors;
+    ParseAssemblyString(code.assembly.c_str(),master.Program,errors,Context);
     if(!errors.getMessage().empty())
-      printf("\n%s",errors.getMessage().c_str());
-    if(verifyModule(*Program))
-      nerror("The IR verifier found an unknown error.");*/
-    return code;
+      nerror("IR Parsed with errors: ",errors.getMessage());
+    if(verifyModule(*master.Program,ReturnStatusAction,&parser_errors))
+      nerror("IR Parser Error: ",parser_errors);
+    master.Passes.run(*master.Program);
+    return code.ret_type;
+  }
+  
+  void Run()
+  {
+    llvm::Function* entryfn = master.Engine->FindFunctionNamed("entry");
+    if(entryfn == NULL)
+      nerror("ERROR: Couldn't find program entry point.");
+    //cerr << "JITed Code: \n";
+    //master.Program->dump();
+    std::vector<GenericValue> args;
+    master.Engine->runFunction(entryfn,args);
+    master.Engine->freeMachineCodeForFunction(entryfn);
+    entryfn->eraseFromParent();
   }
   
   void init_optimizer()
   {
-    /*addPass(master.Passes,createBasicAliasAnalysisPass());
-    addPass(master.Passes,createInstructionCombiningPass());
-    addPass(master.Passes,createReassociatePass());
-    addPass(master.Passes,createGVNPass());
-    addPass(master.Passes,createCFGSimplificationPass());
-    addPass(master.Passes, createInstructionCombiningPass());
-    addPass(master.Passes, createCFGSimplificationPass());
-    addPass(master.Passes, createAggressiveDCEPass());
-    addPass(master.Passes, createGlobalDCEPass());
-    master.run(master.Program);*/
+    master.Passes.add(createBasicAliasAnalysisPass());
+    master.Passes.add(createInstructionCombiningPass());
+    master.Passes.add(createReassociatePass());
+    master.Passes.add(createGVNPass());
+    master.Passes.add(createCFGSimplificationPass());
+    master.Passes.add(createAggressiveDCEPass());
   }
   
   map<string,RGB> defaultColorscheme()
@@ -516,8 +541,11 @@ namespace Hylas
    
   void init()
   {
-    //InitializeNativeTarget();
-    //Program = new Module("Hylas Lisp",Context);
+    InitializeNativeTarget();
+    master.Program = new Module("Hylas Lisp",Context);
+    master.Engine = ExecutionEngine::createJIT(master.Program);
+    master.Loader = new Linker(StringRef("Hylas Lisp"),master.Program);
+    master.Loader->addSystemPaths();
     master.allow_RedefineMacros = true;
     master.allow_RedefineWordMacros = true;
     master.allow_RedefinePrePostfixes = true;
@@ -530,8 +558,7 @@ namespace Hylas
     init_stdlib();
     init_types();
     init_optimizer();
-    //For the color generator
-    //Engine =  EngineBuilder(Program).create();
+    master.Engine =  EngineBuilder(master.Program).create();
   }
   
   void restart()

@@ -1,17 +1,11 @@
-declare i32 @printf(i8*,...)
-define i32(i8*,...)* @entry(){
-%res.version0 = select i1 true, i32(i8*,...)* @printf, i32(i8*,...)* @printf
-ret i32(i8*,...)* %res.version0
-}
+deplibs = [ "curses" ]
 
-declare i1 @exit(i32)
-define i1(i32)* @entry1(){
-%res.version0 = select i1 true, i1(i32)* @exit, i1(i32)* @exit
-ret i1(i32)* %res.version0
-}
+@str0 = global [6 x i8] c"HELLO\00"
 
-declare i8* @malloc(i32,i32)
-define i8*(i32,i32)* @entry2(){
-%res.version0 = select i1 true, i8*(i32,i32)* @malloc, i8*(i32,i32)* @malloc
-ret i8*(i32,i32)* %res.version0
+declare i32 @printw(i8*,...)
+
+define i32 @main(i32 %argc, i8** %argv)
+{
+%res = call i32 (i8*, ...)* @printw(i8* getelementptr inbounds ([6 x i8]* @str0, i64 0, i64 0))
+ret i32 0
 }

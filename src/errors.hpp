@@ -8,9 +8,12 @@
   
   inline void reseterror() { master.errormode = NormalError; }
   
+  class Error : public exception
+  { };
+  
   void Unwind()
   {
-    throw '\0';
+    throw exception();
   }
   
   string getError()
@@ -36,8 +39,8 @@
   template<typename Arg1, typename... Args>
   void error_print(const Arg1& arg1, const Args&... args)
   {
-      master.errmsg += print(arg1);
-      error_print(args...); // note: arg1 does not appear here!
+    master.errmsg += print(arg1);
+    error_print(args...); // note: arg1 does not appear here!
   }
   
   void print_errormode()

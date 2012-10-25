@@ -44,7 +44,9 @@
     for(unsigned int i = 0; i < FunctionTable[in].versions.size(); i++)
     {
       printf("\t\t{\n");
+      printf("\t\t\t Name: %s\n",FunctionTable[in].versions[i].name.c_str());
       printf("\t\t\t Return type: %s\n",FunctionTable[in].versions[i].ret_type.c_str());
+      printf("\t\t\t Function Pointer Type: %s\n",FunctionTable[in].versions[i].fn_ptr_type.c_str());
       printf("\t\t\t Number of Arguments: %lu\n",FunctionTable[in].versions[i].nargs);
       printf("\t\t\t Tail Call Optimized?: %s\n",FunctionTable[in].versions[i].tco ? "Yes" : "No");
       printf("\t\t}\n");
@@ -145,10 +147,10 @@
             {
               string type = printTypeSignature(nth(current_arg,1));
               fn_args[argname] = type;
-              master.SymbolTable[ScopeDepth][argname].type = type;
-              master.SymbolTable[ScopeDepth][argname].constant = false;
-              master.SymbolTable[ScopeDepth][argname].global = false;
-              master.SymbolTable[ScopeDepth][argname].regtype = LValue;
+              master.SymbolTable[ScopeDepth].vars[argname].type = type;
+              master.SymbolTable[ScopeDepth].vars[argname].constant = false;
+              master.SymbolTable[ScopeDepth].vars[argname].global = false;
+              master.SymbolTable[ScopeDepth].vars[argname].regtype = LValue;
               newfn.fn_ptr_type += type + ",";
             }
           }
@@ -176,7 +178,7 @@
         if(removeReturn(seeker->second.versions[i].fn_ptr_type) == rem) //Compare prototypes without comparing return types
           error(form,"A function with the same prototype (",cutlast(rem),") has already been defined.");
       }
-      newfn.name = fn_name + to_string(seeker->second.versions.size()-1);
+      newfn.name = fn_name + to_string(seeker->second.versions.size());
       seeker->second.versions.push_back(newfn);
     }
     else
@@ -205,10 +207,12 @@
     }
     string processed_name = "@" + fn_name + ((seeker != FunctionTable.end()) ? to_string(seeker->second.versions.size()-1) : "0");
     tmp_code = (string)"define " + (newfn.fastcc? "fastcc ":"ccc ") + newfn.ret_type + " " + processed_name
-        + "(" + cutlast(arg_code) + ")\n{\n" + tmp_code;
+        + "(" + cutlast(arg_code) + ")" + (newfn.lining? " alwaysinline" : "") + "\n{\n" + tmp_code;
     //Compile the code
     for(unsigned long i = body_starting_pos; i < length(form);i++)
       tmp_code += emitCode(nth(form,i));
+    if(latest_type() != newfn.ret_type)
+      error(form,"The return type of the function must match the type of the last form in it.");
     push(tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}");
     out += constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,processed_name);
     return out;
@@ -237,11 +241,15 @@
   
   string callFunction(Form* in)
   {
+    //print_fntable();
     //First of all: What does the function look like? Get a "partial function pointer": put the argument types into a list
     string pointer, out;
     string arguments = "(";
     if(cdr(in) == NULL)
+    {
+      arguments = "()";
       pointer = "()";
+    }
     else
     {
       pointer = "(";
@@ -251,8 +259,8 @@
         pointer += latest_type() + ",";
         arguments += latest_type() + " " + get_current_res() + ",";
       }
-      pointer = cutlast(pointer) + ")";
-      arguments = cutlast(arguments) + ")";
+      pointer = ((length(in) != 1) ? cutlast(pointer) + ")" : pointer + ")");
+      arguments = ((length(in) != 1) ? cutlast(arguments) + ")" : arguments + ")");
     }
     if(isatom(car(in)))
     {
@@ -276,9 +284,8 @@
             out += get_unique_res(seeker->second.versions[i].ret_type) + " = " + (seeker->second.versions[i].tco ? "tail call " : "call ");
             out += (seeker->second.versions[i].fastcc ? "fastcc " : "ccc ");
             out += ret_type + " ";
-            out += pointer + "* @"
-                + seeker->second.versions[i].name;
-            out += arguments;
+            out += target + "* @"
+                + seeker->second.versions[i].name + arguments;
             return out;
           }
         }
@@ -288,8 +295,8 @@
         //Name not found in the function table, now let's try variables
         for(long i = ScopeDepth; i != -1; i--)
         {
-          map<string,Variable>::iterator seeker = master.SymbolTable[i].find(name);
-          if(seeker != master.SymbolTable[i].end())
+          map<string,Variable>::iterator seeker = master.SymbolTable[i].vars.find(name);
+          if(seeker != master.SymbolTable[i].vars.end())
           {
             if(isFunctionPointer(seeker->second.type))
             {
@@ -299,7 +306,7 @@
               {
                 //Found our match, emit code to call the pointer
                 string ret_type = string(seeker->second.type,0,seeker->second.type.find('('));
-                out += get_unique_res(ret_type) + " = call " + ret_type + " " + pointer + arguments;
+                out += get_unique_res(ret_type) + " = call " + ret_type + " " + seeker->first + arguments;
                 //We don't provide the calling convention
                 return out;
               }
