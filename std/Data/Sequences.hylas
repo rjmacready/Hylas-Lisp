@@ -1,0 +1,15 @@
+(generic structure sequence (Type)
+  (length       word)
+  (capacity     word)
+  (data         (pointer Type)))
+
+!!!! Definition
+
+!!!! Implementation
+
+!!!! Macros
+
+(word < "(make-sequence ")
+(prefix < "(make-sequence ")
+(word > ")")
+(postfix < "(make-sequence ")

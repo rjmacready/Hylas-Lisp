@@ -1,0 +1,13 @@
+(structure _Matrix
+  (rows         word)
+  (columns      word)
+  (data         (pointer double)))
+
+(type Matrix (pointer _Matrix))
+
+(function Matrix (pointer byte) ((rows    word)
+                                 (columns word))
+  (def ptr (calloc (mul (mul rows columns)
+                        (size (pointer double))))))
+
+  

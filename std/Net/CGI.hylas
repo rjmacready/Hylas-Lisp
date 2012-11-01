@@ -1,0 +1,13 @@
+(foreign C printf int (pointer byte) ...)
+(foreign C sprintf int (pointer byte) (pointer byte) ...)
+(foreign C getenv (pointer byte) (pointer byte))
+
+(main
+  (printf
+    "%s<html lang='%s'><head><meta charset='UTF-8'><title>%s</title></head><body>%s%s%s</body</html>"
+    "Content-Type: text/html\n\n"
+    "en"
+    "Derp"
+    "<h1>Eudoxia is a girl's name</h1>"
+    "<h3>Environment vars:</h3>"
+    (getenv "REMOTE_ADDR")))

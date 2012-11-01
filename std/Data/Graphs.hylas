@@ -1,0 +1,8 @@
+(from std import Sequences)
+
+(generic structure Graph (Type)
+  (nodes        (sequence (Node Type))))
+
+(generic structure Node (Type)
+  (data         Type)
+  (edges        (sequence (pointer (Node Type)))))

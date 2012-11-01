@@ -4,5 +4,9 @@
 *.a
 *.s
 *.bc
+*.cgi
+*.mdsp
+*.sublime-project
+*.komodoproject
 .fuse_hidden*
 docs

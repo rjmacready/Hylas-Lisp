@@ -1,32 +1,25 @@
-  template <typename T>
-  inline string to_string(T datum)
-  {
-    stringstream output;
-    output << datum;
-    return output.str();
-  }
+/*!
+ * @file utils.hpp
+ * @brief Declaration of mostly string-related utilities.
+ * @author Eudoxia
+ */
+
+namespace Hylas
+{
+  using namespace std;
+  using namespace llvm;
   
   template <typename T>
-  inline T from_string(string datum)
-  {
-    stringstream stream(datum);
-    T out;
-    stream >> out;
-    return out;
-  }
+  inline string to_string(T datum);
   
-  string dump_form(Form* input)
-  {
-    string out = (string)"Form: " + (isatom(input) ? "Atom" : "List") + "\n'";
-    out += input + (string)"'\n";
-    return out + "(Line " + to_string(input->line) + ", column " + to_string(input->column) + ")";
-  }
+  template <typename T>
+  inline T from_string(string datum);
   
-  inline string cutlast(string in)
-  { return string(in,0,in.length()-1); }
+  string dump_form(Form* input);
   
-  inline string cutfirst(string in)
-  { return string(in,1); }
+  inline string cutlast(string in);
   
-  inline string cutboth(string in)
-  { return cutfirst(cutlast(in)); }
+  inline string cutfirst(string in);
+  
+  inline string cutboth(string in);
+}

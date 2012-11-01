@@ -1,0 +1,26 @@
+!!!! The String data structure
+
+(structure string
+    (length     word)
+    (capacity   word)
+    (data       word))
+    
+!!!! Definition
+
+(function string string ((in cstring))
+    (doc "Create a string from a C string."))
+(function string string ((length word))
+    (doc "Create an empty string of a given size."))
+(function string length ((in string))
+  (doc "Return the length of a string"))
+(macro cat ((rest string))
+  (doc "Concatenate an arbitrary number of strings."))
+(function string trimleft ((n word))
+  (doc "Trim n characters from the left."))
+(function string trimright ((n word))
+  (doc "Trim n characters from the right."))
+
+!!!! Implementation
+    
+(function string string ((in cstring))
+  (construct string (strlen in) (+ 255 (strlen in)) in))
