@@ -76,7 +76,7 @@
     return in;
   }
   
-inline char* cat(char* a, char* b)
+inline char* base_cat(char* a, char* b)
 {
   size_t length = strlen(a) + strlen(b) + 1;
   char* str = (char*)malloc(sizeof(char)*length);

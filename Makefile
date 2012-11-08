@@ -1,6 +1,6 @@
-CXX = g++
-CXXFLAGS = -std=c++0x -Wall -Wextra -Werror -ggdb -fPIC -rdynamic -g
-LLVMFLAGS = `llvm-config --cppflags --ldflags --libs core jit native asmparser asmprinter linker`
+CXX = clang++
+CXXFLAGS = -std=c++0x -Wall -Wextra -Werror -ggdb
+LLVMFLAGS = `llvm-config --cppflags --ldflags --libs core jit native asmparser asmprinter linker` -ldl
 SOURCES = src/console.cpp
 default:hylas
 

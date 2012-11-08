@@ -46,6 +46,9 @@ namespace Hylas
   unsigned int width(string integer);
   unsigned long typeSize(string type);
   bool isInteger(string in);
+  bool isPointer(string in);
+  bool isFunctionPointer(string in);
+  unsigned long countIndirection(string in);
   unsigned int fpwidth(string in);
   bool isCoreType(string in);
   bool isBasicType(string in);

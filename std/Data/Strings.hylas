@@ -19,6 +19,10 @@
   (doc "Trim n characters from the left."))
 (function string trimright ((n word))
   (doc "Trim n characters from the right."))
+(function string clear ((in string))
+  (doc "Clear the contents of a string"))
+(function string empty? ((in string))
+  (doc "Check if a string is empty"))
 
 !!!! Implementation
     

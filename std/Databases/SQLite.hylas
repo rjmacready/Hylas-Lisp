@@ -1,0 +1,47 @@
+(link "libsqlite3.so")
+
+!Datatypes
+
+(structure sqlite3
+
+  )
+
+(structure sqlite3_backup
+
+  )
+
+(structure sqlite3_blob
+
+  )
+
+(structure sqlite3_context
+
+  )
+
+(type sqlite3_int64 )
+(type sqlite3_uint64 )
+(type sqlite_int64 )
+(type sqlite_uint64 )
+
+(structure sqlite3_module
+  
+  )
+
+(structure sqlite3_mutex
+  
+  )
+
+(structure sqlite3_stmt
+  
+  )
+
+(structure sqlite3_value
+  
+  )
+
+(structure sqlite3_vfs
+  
+  )
+
+!Functions
+

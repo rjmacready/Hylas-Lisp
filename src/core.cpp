@@ -75,7 +75,7 @@ namespace Hylas
     unsigned long l = length(form);
     if(l != 2)
     {
-      printf("ERROR: (return) takes exactly one argument, but %li were provided.", l);
+//       printf("ERROR: (return) takes exactly one argument, but %li were provided.", l);
       Unwind();
     }
     string out = emitCode(nth(form,1));
@@ -949,72 +949,112 @@ but an object of type '",latest_type(),"' was given.");
   string link_with_library(Form* form)
   {
     string filename = cutfirst(cutlast(val(nth(form,1))));
-    llvm::Linker L("Hylas Lisp", master.Program, llvm::Linker::QuietWarnings
-                  | llvm::Linker::QuietErrors);
-    L.addSystemPaths();
     bool Native = true;
-    if (L.LinkInLibrary(filename, Native)) {
-      // that didn't work, try bitcode:
-      llvm::sys::Path FilePath(filename);
-      std::string Magic;
-      if (!FilePath.getMagicNumber(Magic, 64)) {
-        // filename doesn't exist...
-        L.releaseModule();
-        error(form,"Filename doesn't exist");
-      }
-      if (llvm::sys::IdentifyFileType(Magic.c_str(), 64)
-          == llvm::sys::Bitcode_FileType) {
-        // We are promised a bitcode file, complain if it fails
-        L.setFlags(0);
-        if (L.LinkInFile(llvm::sys::Path(filename), Native)) {
-          L.releaseModule();
-          error(form,"I dunno, something");
-        }
-      } else {
-        // Nothing the linker can handle
-        L.releaseModule();
-        error(form,"Linker error, not a shared library or bc file");
-      }
-    } else if (Native) {
-      // native shared library, load it!
-      llvm::sys::Path SoFile = L.FindLib(filename);
-      assert(!SoFile.isEmpty() && "We know the shared lib exists but can't find it back!");
-      std::string errMsg;
-      if(llvm::sys::DynamicLibrary::LoadLibraryPermanently(SoFile.str().c_str(), &errMsg)) {
-        L.releaseModule();
-        error(form,"Failed to load shared library");
-        L.releaseModule();
-      }
-    }
-    L.releaseModule();
-    /*bool isnative = true;
-    if(master.Loader.LinkInLibrary(libname,isnative))
+    if(master.Loader->LinkInLibrary(filename, Native))
     {
-      //Couldn't find the lib
-      sys::Path filepath(libname);
+      Path FilePath(filename);
+      string Magic;
+      if(!FilePath.getMagicNumber(Magic, 64))
+        error(form,"Filename doesn't exist");
+      if(IdentifyFileType(Magic.c_str(), 64) == Bitcode_FileType)
+      {
+        master.Loader->setFlags(0);
+        if (master.Loader->LinkInFile(Path(filename), Native))
+          error(form,"I dunno, something");
+      }
+      else
+        error(form,"Linker error, not a shared library or bc file");
+    }
+    else if (Native)
+    {
+      // native lib
+      Path SoFile = master.Loader->FindLib(filename);
+      assert(!SoFile.isEmpty() && "We know the shared lib exists but can't find it back!");
+      string errMsg;
+      if(DynamicLibrary::LoadLibraryPermanently(SoFile.str().c_str(), &errMsg))
+        error(form,"Failed to load shared library");
+    }
+    return constant(get_unique_res("i1"),"i1","true");
+  }
+  
+  string create(Form* form)
+  {
+    string type = printTypeSignature(nth(form,1))+"*", out = emitCode(nth(form,2));
+    if(latest_type() != mword)
+      error(form,"The second argument to (create) must be a machine word, but an object of type '",latest_type(),"' was given.");
+    out += get_unique_tmp() + " = mul " + mword + " " + get_current_res() + ", " + to_string(typeSize(cutlast(type))/8) + "\n";
+    out += get_unique_tmp() + " = call i8* @malloc(" + mword + " " + get_current_tmp() + ")\n";
+    //Insert a gc root here
+    out += get_unique_res(type) + " = bitcast i8* " + get_current_tmp() + " to " + type + "\n";
+    //If pointers should be null-initialized
+    //out += store(type,"null",get_current_res());
+    return out;
+  }
+  
+  string reallocate(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string type = latest_type();
+    out += get_unique_tmp() + " = bitcast " + type + " " + get_current_res() + " to i8*\n";
+    out += emitCode(nth(form,1));
+    if(latest_type() != mword)
+      error(form,"The second argument to (reallocate) must be a machine word (",mword,"), but an object of type '",latest_type(),"' was given.");
+    out += get_unique_tmp() + " = call i8* @realloc(i8* " + get_current_tmp() + ", " + mword + " " + get_current_res() + ")\n";
+    out += get_unique_res(type) + " = bitcast i8* " + get_current_tmp() + " to " + type + "\n";
+    return out;
+  }
+  
+  string destroy(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string type = latest_type();
+    out += get_unique_tmp() + " = bitcast " + type + " " + get_current_res() + " to i8*\n";
+    out += "call void @free(i8* " + get_current_tmp() + ")\n";
+    return out + constant(get_unique_res("i1"),"i1","true");
+  }
+  
+  string ghost_print(Form* form)
+  {
+    string out = emitCode(nth(form,1));
+    string message;
+    bool ptr;
+    if(isFunctionPointer(latest_type()))
+    {
+      message = "<0x%X pointer to function " + latest_type() + " with indirection " + to_string(countIndirection(latest_type())) + ">";
+      ptr = true;
+    }
+    else if(isPointer(latest_type()))
+    {
+      message = "<0x%X pointer to " + latest_type() + " with indirection " + to_string(countIndirection(latest_type())) + ">";
+      ptr = true;
+    }
+    else if(isInteger(latest_type()))
+    {
+      message = "<" + latest_type() + " unprintable integer (too wide)>";
+      ptr = false;
+    }
+    else if(isCoreType(latest_type()))
+    {
+      message = "<" + latest_type() + " unprintable floating point>";
+      ptr = false;
     }
     else
     {
-      //Native lib
-      llvm::sys::Path filepath = master.Loader.FindLib(libname);
-      assert(!SoFile.isEmpty() && "We know the shared lib exists but can't find it back!");
-      string errMsg;
-      if(DynamicLibrary::LoadLibraryPermanently(filepath.str().c_str(), &errMsg))
-        error(form,"Failed to load shared library.");
+      error(form,"I don't even know what to do with this type (",latest_type(),").");
     }
-    bool derp = true;
-    master.Program->addLibrary(libname);
-    if(master.Loader->LinkInLibrary(libname,derp))
-      nerror(master.Loader->getLastError());
-    bool herp = sys::DynamicLibrary::LoadLibraryPermanently(libname.c_str());
-    if(derp == false || herp == false)
-      error(form,"Error loading the library '",libname,"'.");
-    vector<string> libs = master.Program->getLibraries();
-    for(unsigned long i = 0; i < libs.size(); i++)
+    if(ptr)
     {
-      cerr << "Using library: " << libs[i] << endl;
-    }*/
-    return constant(get_unique_res("i1"),"i1","true");
+      out += emitCode(readString(message));
+      out += gensym() + " = call i32 @printf(i8* " + get_current_res() 
+          + ", " + res_type(get_res(res_version-1)) + " " + get_res(res_version-1) + ")\n";
+    }
+    else
+    {
+      out += gensym() + " = call i32 @puts(i8* @str" + to_string(string_version)
+          + ")\n";
+    }
+    out += constant(get_unique_res("i1"),"i1","true");
+    return out;
   }
   
   /*!
@@ -1091,11 +1131,15 @@ but an object of type '",latest_type(),"' was given.");
     Core["store"]            = &mem_store;
     Core["load"]             = &mem_load;
     Core["address"]          = &address;
+    Core["create"]           = &create;
+    Core["reallocate"]       = &reallocate;
+    Core["destroy"]          = &destroy;
     Core["import"]           = &import;
     Core["link"]             = &link_with_library;
     //Word macros
     addWordMacro("bool","i1");
     addWordMacro("byte","i8");
+    addWordMacro("char","i8");
     addWordMacro("octet","i8");
     addWordMacro("short","i16");
     addWordMacro("int","i32");

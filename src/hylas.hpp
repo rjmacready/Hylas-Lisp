@@ -47,6 +47,7 @@ namespace Hylas
 {
   using namespace std;
   using namespace llvm;
+  using namespace llvm::sys;
   
   LLVMContext& Context = getGlobalContext();
   
@@ -199,6 +200,20 @@ namespace Hylas
   inline string latest_type();  
   inline string constant(string destination, string type, string value);  
   void dump_scope(unsigned long s);
+  
+  //Namespaces
+  
+    /*!
+     * @brief Check if a string has already been namespaced
+     * 
+     */
+  inline bool isNamespaced(string in);
+    /*!
+     * @brief Take a symbol, and if it's not namespaced, append the current namespace to it
+     * 
+     */
+  string getNamespace(string in);
+  
   
   // Code generation
   

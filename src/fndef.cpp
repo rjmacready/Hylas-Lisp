@@ -190,6 +190,7 @@ namespace Hylas
       tmp_code += emitCode(nth(form,i));
     if(latest_type() != newfn.ret_type)
       error(form,"The return type of the function must match the type of the last form in it.");
+    master.SymbolTable.pop_back();
     push(tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}");
     out += constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,processed_name);
     return out;
@@ -200,14 +201,6 @@ namespace Hylas
     //Not implemented yet
     return print(code) + to_string(gen_pos);
   }
-  bool isFunctionPointer(string in)
-  {
-    return ((in.find('(') != string::npos) &&
-            (in.find(')') != string::npos) &&
-            (in.find('(') < in.find(')')) &&
-            (in[in.length()-1] == '*'));
-    //TODO some other tests are needed
-  }
   
   string cleanPointer(string in)
   {
@@ -216,7 +209,7 @@ namespace Hylas
     return arglist;
   }
   
-  string callFunction(Form* in, bool emiterror)
+  string callFunction(Form* in)
   {
     //print_fntable();
     //First of all: What does the function look like? Get a "partial function pointer": put the argument types into a list
@@ -271,6 +264,11 @@ namespace Hylas
           }
         }
       }
+      else if(name == "print")
+      {
+        //This must be the ghost print function, because the protype didn't match any existing one
+        out = ghost_print(in);
+      }
       else
       {
         //Name not found in the function table, now let's try variables
@@ -297,10 +295,7 @@ namespace Hylas
           }
         }
       }
-      if(emiterror)
-        error(in,"No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype ",pointer,".");
-      else
-        return "NOFOUND";
+      error(in,"No function (Or variable with a matching function pointer type) matches the name '",name,"' and the protype ",pointer,".");
     }
     else if(islist(car(in)))
     {

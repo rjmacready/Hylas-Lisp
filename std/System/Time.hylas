@@ -1,0 +1,47 @@
+! Datatype
+
+(structure _Time
+
+  )
+
+(type Time (pointer _Time))
+
+! Interface
+
+(function Time Time ()
+  )
+
+(function Time Time ((day       word)
+                     (month     word)
+                     (year      word))
+  (doc "Create a Time structure with day, month and year."))
+
+(function day word ((in Time))
+  (doc "Return the day."))
+(function month word ((in Time))
+  (doc "Return the month."))
+(function year word ((in Time))
+  (doc "Return the year."))
+
+(function day-of-week word ((in Time))
+  (doc "Return the day of the week ([1..7])."))
+(function day-of-month word ((in Time))
+  (doc "Return the day of the month ([1..31])."))
+(function day-of-year word ((in Time))
+  (doc "Return the day of the year ([1...365])."))
+(function day-in-year word ((in Time))
+  (doc "Return the number of days in the year."))
+(function week-of-month word ((in Time))
+  (doc "Return the week of the month."))
+(function week-of-year word ((in Time))
+  (doc "Return the week of the year."))
+(function leap? bool ((in Time))
+  (doc "Return the day"))
+(function valid? word ((in Time))
+  (doc "Return the day"))
+(function Time->string string ((in Time))
+  (doc "Return the day"))
+(function Time->cstring cstring ((in Time))
+  (doc "Return the day"))
+
+! Implementation

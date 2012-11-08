@@ -1,4 +1,4 @@
-(from std import Sequences)
+(from Data import Sequences)
 
 (generic structure Graph (Type)
   (nodes        (sequence (Node Type))))

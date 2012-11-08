@@ -50,7 +50,6 @@ namespace Hylas
   
   string defineFunction(Form* form, fnType fn_type, bool inlining);  
   string callGeneric(long gen_pos, Form* code);
-  bool isFunctionPointer(string in);
   string cleanPointer(string in);  
-  string callFunction(Form* in, bool emiterror=true);
+  string callFunction(Form* in);
 }

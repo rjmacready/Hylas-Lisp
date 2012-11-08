@@ -1,0 +1,7 @@
+(foreign C system int (pointer char))
+
+! Datatypes
+
+! Interface
+
+! Implementation

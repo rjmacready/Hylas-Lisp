@@ -1,0 +1,12 @@
+! Datatypes
+
+(structure Program
+  (name         cstring)
+  (arguments    (sequence cstring))
+  )
+
+! Interface
+
+
+
+! Implementation

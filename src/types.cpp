@@ -79,6 +79,33 @@ namespace Hylas
     return ((in[0] == 'i') && ((bit_width >= 1) && (bit_width < (pow(2,23)-1))));
   }
   
+  bool isPointer(string in)
+  {
+    if(in[in.length()-1] == '*')
+      return true;
+    return false;
+  }
+  
+  bool isFunctionPointer(string in)
+  {
+    return ((in.find('(') != string::npos) &&
+            (in.find(')') != string::npos) &&
+            (in.find('(') < in.find(')')) &&
+            (in[in.length()-1] == '*'));
+    //TODO some other tests are needed
+  }
+  
+  unsigned long countIndirection(string in)
+  {
+    unsigned long indirection = 0;
+    for(unsigned long i = 0; i < in.length(); i++)
+    {
+      if(in[i] == '*')
+        indirection++;
+    }
+    return indirection;
+  }
+  
   unsigned int fpwidth(string in)
   {
     //Doesn't return the width of a float, rather, returns its place in the

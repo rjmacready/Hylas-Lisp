@@ -1,1 +1,12 @@
-(macro out (rest))
+!!!! Definition
+
+(macro out (&rest)
+  (doc "Print a bunch of things to stdout"))
+
+(function in cstring ()
+  (doc "Take input from stdin."))
+
+
+
+!!!! Implementation
+

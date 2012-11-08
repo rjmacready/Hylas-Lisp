@@ -13,7 +13,6 @@ namespace Hylas
   
   map<string,hFuncPtr> TopLevel;
   map<string,hFuncPtr> Core;
-  map<string,hFuncPtr> After;
   
   vector<string> allowedIntComparisons;
   vector<string> allowedFloatComparisons;
@@ -85,17 +84,46 @@ namespace Hylas
   string make_array(Form* form, bool global);  
   string global_array(Form* in);  
   string local_array(Form* in);  
-  string nth_array(Form* in);  
-  string mem_allocate(Form* in);  
-  string mem_store(Form* in);  
-  string mem_load(Form* in);  
-  string address(Form* in);  
-  string toplevel_asm(Form* in);  
-  string inline_asm(Form* in);  
-  string word(Form* in);    
-  string fixes(Form* in, bool pre);  
-  string prefix(Form* in);  
+  string nth_array(Form* in);
+  string with_namespace(Form* in);
+  string in_namespace(Form* in);
+  string mem_allocate(Form* in);
+  string mem_store(Form* in);
+    /*!
+     * 
+     */
+  string mem_load(Form* in);
+    /*!
+     * 
+     */
+  string address(Form* in);
+    /*!
+     * 
+     */
+  string toplevel_asm(Form* in);
+    /*!
+     * 
+     */
+  string inline_asm(Form* in);
+    /*!
+     * 
+     */
+  string word(Form* in);
+    /*!
+     * 
+     */
+  string fixes(Form* in, bool pre);
+    /*!
+     * 
+     */
+  string prefix(Form* in);
+    /*!
+     * 
+     */
   string postfix(Form* in);
+    /*!
+     * 
+     */
   string import(Form* in);  
     /*!
     * @brief Takes a string (A path), then calls out to the JIT which loads the library
@@ -110,10 +138,21 @@ namespace Hylas
      */
   string create(Form* form);
     /*!
+     * @brief Resizes an array.
+     * 
+     */
+  string resize(Form* form);
+    /*!
      * @brief Destroys a heap-allocated object.
      * 
      */
   string destroy(Form* form);
+    /*!
+     * @brief The 'ghost' print function, takes care of printing values for
+     * which no 'real' print function has been defined (Pointers, fn pointers).
+     * 
+     */
+  string ghost_print(Form* form);
     /*!
      * @brief Map function names to their pointers
      * 

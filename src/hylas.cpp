@@ -88,7 +88,7 @@ namespace Hylas
     master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].type = type;
     master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].address = address;
     master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].regtype = (symbolic?SymbolicRegister:LValue);
-    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].scope_address = ((ScopeDepth==-1)?0:ScopeDepth);
+    master.SymbolTable[ScopeDepth].vars["%res.version" + vnum].scope_address = ScopeDepth/*((ScopeDepth==-1)?0:ScopeDepth)*/;
     return "; <with address " + address + ">\n%res.version" + vnum;
   }
   
@@ -148,7 +148,26 @@ namespace Hylas
     {
       printf("\n %s : %s",i->first.c_str(),i->second.type.c_str());
     }
-  } 
+  }
+  
+  inline bool isNamespaced(string in)
+  {
+    if(in.find(":") != string::npos)
+      return true;
+    return false;
+  }
+  
+  string getNamespace(string in)
+  {
+    if(!isNamespaced(in))
+    {
+      for(unsigned long i = 0; i < master.NamespaceStack.size(); i++)
+      {
+        in = master.NamespaceStack[i] + ":" + in;
+      }
+    }
+    return in;
+  }
   
   string emitCode(Form* form)
   {
@@ -299,7 +318,9 @@ namespace Hylas
         if(seeker != Core.end())
           out = seeker->second(form);
         else
+        {
           out = callFunction(form);
+        }
       }
     }
     return out+"\n";
@@ -307,6 +328,7 @@ namespace Hylas
   
   IR Compile(Form* form)
   {
+    //form = readString("(print " + print(form) + ")");
     string out;
     string tmp;
     if(form == NULL)
@@ -385,7 +407,7 @@ namespace Hylas
     InitializeNativeTarget();
     master.Program = new Module("Hylas Lisp",Context);
     master.Engine = ExecutionEngine::createJIT(master.Program);
-    master.Loader = new Linker(StringRef("Hylas Lisp"),master.Program);
+    master.Loader = new Linker("Hylas Lisp",master.Program);
     master.Loader->addSystemPaths();
     master.allow_RedefineMacros = true;
     master.allow_RedefineWordMacros = true;
