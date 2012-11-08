@@ -217,10 +217,11 @@ namespace Hylas
   
   // Code generation
   
-  string emitCode(Form* form); 
+  enum emissionContext { Top, Bottom };
+  
+  string emitCode(Form* form, emissionContext ctx); 
   IR Compile(Form* form);
-  IR JIT(IR code);
-  void Run();
+  string JIT(IR code);
   void init_optimizer();
   void init();
   void restart();

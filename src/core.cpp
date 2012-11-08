@@ -93,7 +93,7 @@ namespace Hylas
  the same type. Here, the first operand was of type '",res_type(get_res(address)),\
 "', while the second was of type '",latest_type(),"'.");       
     return out + get_unique_res(latest_type()) + " = " + opcode + " " + latest_type()
-    + " " + get_res(address) + ", " + get_current_res();
+    + " " + get_res(address) + ", " + get_res(res_version-1);
   }
   
   string add(Form* form)                { return generic_math(form,"add");   }
@@ -223,8 +223,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (truncate) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = trunc " + latest_type() + " "
-            + get_current_res() + " to " + to;
+      return out + get_unique_res(to) + " = trunc " + res_type(get_res(res_version-1)) + " "
+            + get_res(res_version-1) + " to " + to;
     }
     else if(isCoreType(latest_type())) //Automatically a float
     {
@@ -238,8 +238,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (truncate) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = fptrunc " + latest_type() + " "
-            + get_current_res() + " to " + to;
+      return out + get_unique_res(to) + " = fptrunc " + res_type(get_res(res_version-1)) + " "
+            + get_res(res_version-1) + " to " + to;
     }
     else
       error(form,"The first argument to truncate must be an integer or a \
@@ -262,8 +262,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (extend) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = sext " + latest_type() + " "
-            + get_current_res() + " to " + to;
+      return out + get_unique_res(to) + " = sext " + res_type(get_res(res_version-1)) + " "
+            + get_res(res_version-1) + " to " + to;
     }
     else if(isCoreType(latest_type())) //Automatically a float
     {
@@ -277,8 +277,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (truncate) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = fpext " + latest_type() + " "
-            + get_current_res() + " to " + to;
+      return out + get_unique_res(to) + " = fpext " + res_type(get_res(res_version-1)) + " "
+            + get_res(res_version-1) + " to " + to;
     }
     else
       error(form,"The first argument to truncate must be an integer or a \
@@ -296,8 +296,8 @@ floating point type, but an object of type ",latest_type()," was given.");
       error(form,"The bit width of the first argument to (zextend) must be \
 lesser than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-    return out + get_unique_res(to) + " = zext " + latest_type() + " "
-           + get_current_res() + " to " + to;
+    return out + get_unique_res(to) + " = zext " + res_type(get_res(res_version-1)) + " "
+           + get_res(res_version-1) + " to " + to;
   }
   
   string sextend(Form* form)
@@ -310,8 +310,8 @@ width(latest_type())," and ",width(to),", respectively.");
       error(form,"The bit width of the first argument to (sextend) must be \
 lesser than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-    return out + get_unique_res(to) + " = sext " + latest_type() + " "
-           + get_current_res() + " to " + to;
+    return out + get_unique_res(to) + " = sext " + res_type(get_res(res_version-1)) + " "
+           + get_res(res_version-1) + " to " + to;
   }
   
   /*
@@ -357,8 +357,9 @@ but an object of type '",latest_type(),"' was given.");
   {
     string out = emitCode(nth(form,1));
     string to = printTypeSignature(nth(form,2));
-    return out + get_unique_res(to) + " = bitcast " + latest_type() + " "
-           + get_current_res() + " to " + to;
+    out += get_unique_res(to) + " = bitcast " + res_type(get_res(res_version-1)) + " "
+        + get_res(res_version-1) + " to " + to;
+    return out;
   }
   
   string size(Form* form)
@@ -983,7 +984,7 @@ but an object of type '",latest_type(),"' was given.");
     if(latest_type() != mword)
       error(form,"The second argument to (create) must be a machine word, but an object of type '",latest_type(),"' was given.");
     out += get_unique_tmp() + " = mul " + mword + " " + get_current_res() + ", " + to_string(typeSize(cutlast(type))/8) + "\n";
-    out += get_unique_tmp() + " = call i8* @malloc(" + mword + " " + get_current_tmp() + ")\n";
+    out += get_unique_tmp() + " = call i8* @malloc(" + mword + " " + get_tmp(tmp_version-1) + ")\n";
     //Insert a gc root here
     out += get_unique_res(type) + " = bitcast i8* " + get_current_tmp() + " to " + type + "\n";
     //If pointers should be null-initialized
@@ -1042,16 +1043,15 @@ but an object of type '",latest_type(),"' was given.");
     {
       error(form,"I don't even know what to do with this type (",latest_type(),").");
     }
+    out += emitCode(readString("\""+message+"\""));
     if(ptr)
     {
-      out += emitCode(readString(message));
       out += gensym() + " = call i32 @printf(i8* " + get_current_res() 
           + ", " + res_type(get_res(res_version-1)) + " " + get_res(res_version-1) + ")\n";
     }
     else
     {
-      out += gensym() + " = call i32 @puts(i8* @str" + to_string(string_version)
-          + ")\n";
+      out += gensym() + " = call i32 @puts(i8* " + get_current_res() + ")\n";
     }
     out += constant(get_unique_res("i1"),"i1","true");
     return out;
@@ -1065,17 +1065,16 @@ but an object of type '",latest_type(),"' was given.");
     Scope new_scope;
     master.SymbolTable.push_back(new_scope);
     //Init Core
-    TopLevel["main"]         = &main_fn;
     TopLevel["def"]          = &def_global;
     TopLevel["def-as"]       = &def_as_global;
-    TopLevel["type"]         = &makeType;
-    TopLevel["structure"]    = &makeStructure;
-    TopLevel["generic"]      = &genericInterface;
+    Core["type"]         = &makeType;
+    Core["structure"]    = &makeStructure;
+    Core["generic"]      = &genericInterface;
     Core["asm"]              = &toplevel_asm;
     Core["inline-asm"]       = &inline_asm;
-    TopLevel["word"]         = &word;
-    TopLevel["prefix"]       = &prefix;
-    TopLevel["postfix"]      = &postfix;
+    Core["word"]         = &word;
+    Core["prefix"]       = &prefix;
+    Core["postfix"]      = &postfix;
     Core["LLVM"]             = &embed_llvm;
     Core["inline-LLVM"]      = &embed_llvm;
     Core["function"]         = &define_function;
@@ -1170,10 +1169,34 @@ but an object of type '",latest_type(),"' was given.");
     addWordMacro("<","slt");
     addWordMacro("u<","ult");*/
     //Allowed comparisons for numerical operations
-    allowedIntComparisons = {"eq", "ne", "ugt", "uge", "ult", "ule", "sgt"
-                             "sge", "slt", "sle"};
-    allowedFloatComparisons = {"false", "oeq", "ogt", "oge", "olt", "ole", "one",
-                               "ord", "ueq", "ugt", "uge", "ult", "ule", "une",
-                               "uno", "true"};
+    allowedIntComparisons.push_back("eq");
+    allowedIntComparisons.push_back("ne");
+    allowedIntComparisons.push_back("ugt");
+    allowedIntComparisons.push_back("uge");
+    allowedIntComparisons.push_back("ult");
+    allowedIntComparisons.push_back("ule");
+    allowedIntComparisons.push_back("sgt");
+    allowedIntComparisons.push_back("sge");
+    allowedIntComparisons.push_back("slt");
+    allowedIntComparisons.push_back("sle");
+    //{"eq", "ne", "ugt", "uge", "ult", "ule", "sgt", "sge", "slt", "sle"};
+    allowedFloatComparisons.push_back("false");
+    allowedFloatComparisons.push_back("oeq");
+    allowedFloatComparisons.push_back("ogt");
+    allowedFloatComparisons.push_back("oge");
+    allowedFloatComparisons.push_back("olt");
+    allowedFloatComparisons.push_back("ole");
+    allowedFloatComparisons.push_back("one");
+    allowedFloatComparisons.push_back("ord");
+    allowedFloatComparisons.push_back("ueq");
+    allowedFloatComparisons.push_back("ugt");
+    allowedFloatComparisons.push_back("uge");
+    allowedFloatComparisons.push_back("ult");
+    allowedFloatComparisons.push_back("ule");
+    allowedFloatComparisons.push_back("une");
+    allowedFloatComparisons.push_back("uno");
+    allowedFloatComparisons.push_back("true");
+    //{"false", "oeq", "ogt", "oge", "olt", "ole", "one", "ord", "ueq", "ugt",
+    // "uge", "ult", "ule", "une", "uno", "true"};
   }
 }

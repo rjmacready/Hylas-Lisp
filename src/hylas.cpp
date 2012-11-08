@@ -169,7 +169,7 @@ namespace Hylas
     return in;
   }
   
-  string emitCode(Form* form)
+  string emitCode(Form* form, emissionContext ctx = Bottom)
   {
     string out;
     if(form == NULL)
@@ -309,19 +309,18 @@ namespace Hylas
       if(islist(car(form)))
         error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
       string func = val(car(form));
-      map<string,hFuncPtr>::iterator seeker = TopLevel.find(func);
-      if(seeker != TopLevel.end())
+      map<string,hFuncPtr>::iterator seeker;
+      if(ctx == Top)
+      {
+        seeker = TopLevel.find(func);
+        if(seeker != TopLevel.end())
+          out = seeker->second(form);
+      }  
+      seeker = Core.find(func);
+      if(seeker != Core.end())
         out = seeker->second(form);
       else
-      {
-        seeker = Core.find(func);
-        if(seeker != Core.end())
-          out = seeker->second(form);
-        else
-        {
-          out = callFunction(form);
-        }
-      }
+        out = callFunction(form);
     }
     return out+"\n";
   }
@@ -351,7 +350,7 @@ namespace Hylas
         out = emitCode(form);
     }
     else
-      out = emitCode(form);
+      out = emitCode(form,Top);
     for(unsigned long i = 0; i < master.Persistent.size(); i++)
       tmp += master.Persistent[i] + "\n";
     for(unsigned long i = 0; i < master.CodeStack.size(); i++)
@@ -366,7 +365,7 @@ namespace Hylas
     return {out,type};
   }
   
-  IR JIT(IR code)
+  string JIT(IR code)
   {
     SMDiagnostic errors;
     string parser_errors;
@@ -378,18 +377,14 @@ namespace Hylas
     if(master.debug)
       master.Program->dump();
     master.Passes.run(*master.Program);
-    return code;
-  }
-  
-  void Run()
-  {
     llvm::Function* entryfn = master.Engine->FindFunctionNamed("entry");
     if(entryfn == NULL)
       nerror("ERROR: Couldn't find program entry point.");
     std::vector<GenericValue> args;
-    master.Engine->runFunction(entryfn,args);
+    GenericValue retval = master.Engine->runFunction(entryfn,args);
     master.Engine->freeMachineCodeForFunction(entryfn);
     entryfn->eraseFromParent();
+    return string((char*)(retval.PointerVal));
   }
   
   void init_optimizer()
@@ -422,6 +417,78 @@ namespace Hylas
     init_types();
     init_optimizer();
     master.Engine =  EngineBuilder(master.Program).create();
+    JIT(Compile(readString("(begin                                            \
+  (foreign C puts int (pointer char))                                           \
+  (foreign C printf int (pointer char) ...)                                     \
+  (foreign C strlen word (pointer char))                                        \
+  (foreign C strcat (pointer char) (pointer char) (pointer char))               \
+  (foreign C sprintf int (pointer char) (pointer char) ...)          \
+  (foreign C strcpy (pointer char) (pointer char) (pointer char))               \
+                                                                                \
+  (foreign C malloc (pointer byte) word)                                        \
+  (foreign C free void (pointer byte))                                          \
+  (foreign C realloc (pointer byte) (pointer byte) word)                        \
+                                                                                \
+  (function print (pointer char) ((in byte))                          \
+    (def str (create char 2))                                                   \
+    (sprintf str \"%c\" in)\
+    str)                                                    \
+                                                                                \
+  (function print (pointer char) ((in short))                                   \
+    (def buf (create char 200))                                                 \
+    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))                    \
+    (def str (create char size))                                                \
+    (destroy buf)                                                               \
+    (strcpy str buf))                                                           \
+                                                                                \
+  (function print (pointer char) ((in int))                                     \
+    (def buf (create char 200))                                                 \
+    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))\
+    (def str (create char size))                                                \
+    (destroy buf)                                                               \
+    (strcpy str buf))                                                           \
+                                                                                \
+  (function print (pointer char) ((in long))                                    \
+    (def buf (create char 200))                                                 \
+    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))                    \
+    (def str (create char size))                                                \
+    (strcpy str buf))                                                           \
+                                                                                \
+                                     \
+                                                                                \
+  (function print (pointer char) ((in float))                                   \
+    (def buf (create char 200))                                                 \
+    (def size (extend (add (sprintf buf \"%g\" in) (truncate 1 i32)) word))                      \
+    (def str (create char size))                                                \
+    (destroy buf)                                                               \
+    (strcpy str buf))                                                           \
+                                                                                \
+  (function print (pointer char) ((in double))                                  \
+    (def buf (create char 200))                                                 \
+    (def size (extend (add (sprintf buf \"%g\" in) (truncate 1 i32)) word))                    \
+    (def str (create char size))                                                \
+    (destroy buf)                                                               \
+    (strcpy str buf))                              \
+                                                                                \
+  (function print (pointer char) ((in x86_fp80))                                \
+    (def buf (create char 200))                                                 \
+    (def size (extend (add (sprintf buf \"%g\" in) (truncate 1 i32)) word))                      \
+    (def str (create char size))                                                \
+    (destroy buf)                                                               \
+    (strcpy str buf))                                                           \
+                                                                                \
+                                                 \
+                                                                                \
+  (function print (pointer char) ((in (pointer char)))                          \
+    in)                                                                         \
+                                                                                \
+  (function _base_cat (pointer char) ((a (pointer char))                        \
+                                    (b (pointer char)))                         \
+    (def length (add 1 (add (strlen a) (strlen b))))                            \
+    (def str (create char length))                                              \
+    (strcat str a)                                                              \
+    (strcat str b))                                                             \
+  )")));
   }
   
   void restart()

@@ -637,6 +637,13 @@ namespace Hylas
   
   void init_types()
   {
-    CoreTypes = {"half", "float", "double", "x86_fp80", "fp128", "ppc_fp128", "..." };
+    CoreTypes.push_back("half");
+    CoreTypes.push_back("float");
+    CoreTypes.push_back("double");
+    CoreTypes.push_back("x86_fp80");
+    CoreTypes.push_back("fp128");
+    CoreTypes.push_back("ppc_fp128");
+    CoreTypes.push_back("...");
+    //CoreTypes = {"half", "float", "double", "x86_fp80", "fp128", "ppc_fp128", "..." };
   }
 }

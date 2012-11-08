@@ -264,11 +264,18 @@ namespace Hylas
           }
         }
       }
-      else if(name == "print")
+      if(name == "print")
       {
         //This must be the ghost print function, because the protype didn't match any existing one
-        out = ghost_print(in);
+        return ghost_print(in);
       }
+      /*else if(isInteger(name))
+      {
+        string type = "i"+width(name);
+        out += get_unique_res(type) + " = bitcast " + latest_type() + " " + get_current_res() + " to " + type + "\n";
+        cout << "EWFERWREGERE" << latest_type() << endl;
+        return out;
+      }*/
       else
       {
         //Name not found in the function table, now let's try variables
