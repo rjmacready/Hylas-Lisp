@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Hylas Lisp</title>
+    <link rel="stylesheet" href="css/style.css" type="text/css"/>
+  </head>
+  <body id="body">
+    <img src="img/logo.svg" alt="logo">
+    <ul class="nav">
+      <li>Home</li>
+      <li>Documentation</li>
+      <li>Source Code</li>
+    </ul>
+    <div class="content">
+    
+    </div>
+    <footer>
+      Site design by <a href="https://plus.google.com/100124798499282304109">Eudoxia</a>
+    </footer>
+  </body>
+</html>
