@@ -41,7 +41,10 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
         <td><strong>Kind</strong></td><td><strong>C</strong></td><td><strong>Hylas</strong></td>
     </tr>
     <tr>
-        <td><strong>Integers</strong></td><td>char, short, int, long, long long, signed and unsigned.</td><td>i1, i2, i3... i8388607 (Number indicates the bit-width). Signature is a property of _operations_, not types.
+        <td><strong>Integers</strong></td><td>char, short, int, long, long long, signed and unsigned.</td>
+        <td>i1, i2, i3... i8388607 (Number indicates the bit-width). Signature is a property of <em>operations</em>, not types.
+        
+        
         Aliases exist for the most common ones:
         * `bool`: i1
         * `char`, byte: i8 or i7, depending on the architecture
@@ -49,6 +52,8 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
         * `int`: i32
         * `long`: i64
         * `word`: i32 on 32-bit machines, i64 on 64-bit machines (Width of a machine word)
+        
+        
         </td>
     </tr>
     <tr>
