@@ -38,26 +38,26 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 <table>
     <tr>
-        <td>**Kind**</td><td>**C**</td><td>**Hylas**</td>
+        <td><strong>Kind</strong></td><td><strong>C</strong></td><td><strong>Hylas</strong></td>
     </tr>
     <tr>
-        <td>**Integers**</td><td>char, short, int, long, long long, signed and unsigned.</td><td>i1, i2, i3... i8388607 (Number indicates the bit-width). Signature is a property of _operations_, not types.
+        <td><strong>Integers</strong></td><td>char, short, int, long, long long, signed and unsigned.</td><td>i1, i2, i3... i8388607 (Number indicates the bit-width). Signature is a property of _operations_, not types.
         Aliases exist for the most common ones:
-        * bool: i1
-        * char, byte: i8 or i7, depending on the architecture
-        * short: i16
-        * int: i32
-        * long: i64
-        * word: i32 on 32-bit machines, i64 on 64-bit machines (Width of a machine word)
+        * `bool`: i1
+        * `char`, byte: i8 or i7, depending on the architecture
+        * `short`: i16
+        * `int`: i32
+        * `long`: i64
+        * `word`: i32 on 32-bit machines, i64 on 64-bit machines (Width of a machine word)
         </td>
     </tr>
     <tr>
-        <td>**Floating-Point**</td><td>float, double, long double</td><td>half, float, double, fp128, x86_fp80, ppc_fp128</td>
+        <td><strong>Floating-Point</strong></td><td>float, double, long double</td><td>half, float, double, fp128, x86_fp80, ppc_fp128</td>
     </tr>
     <tr>
-        <td>**Aggregate**</td><td>Structures (Can be opaque), arrays, pointers and unions. Has void pointers.</td><td>Structures (Can be opaque) and pointers. Arrays are pointers. Doesn't have void pointers, can be implemented through coercion functions.</td>
+        <td><strong>Aggregate</strong></td><td>Structures (Can be opaque), arrays, pointers and unions. Has void pointers.</td><td>Structures (Can be opaque) and pointers. Arrays are pointers. Doesn't have void pointers, can be implemented through coercion functions.</td>
     </tr>
     <tr>
-        <td>**Standard Library**</td><td>size_t, FILE*, _Bool</td><td>Hash Tables, Sequences (Resizable arrays, bound-checked arrays), filesystem-independent Filepath and Process objects...</td>
+        <td><strong>Standard Library</strong></td><td>size_t, FILE*, _Bool</td><td>Hash Tables, Sequences (Resizable arrays, bound-checked arrays), filesystem-independent Filepath and Process objects...</td>
     </tr>
 </table>
