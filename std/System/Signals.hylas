@@ -1,0 +1,11 @@
+(enumerate Signal
+  Abort-Signal
+  FPE-Signal
+  Illegal-Instruction-Signal
+  Interrupt-Signal
+  Segfault-Signal
+  Termination-Signal)
+
+(foreign C raise int int)
+(foreign C signal (fn void int) int (fn void int))
+  
