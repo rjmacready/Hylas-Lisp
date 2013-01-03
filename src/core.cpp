@@ -12,7 +12,6 @@ namespace Hylas
   string def(Form* form, bool global, bool typeonly)
   {
     string varname = val(nth(form,1));
-    //cout << "Var to be def'd: " << varname << endl;
     Variable* tmp = lookup(varname);
     if(tmp != NULL)
       error(form,"Symbol already defined.");
@@ -27,9 +26,17 @@ namespace Hylas
       out += emitCode(nth(form,2));
       type = latest_type();
     }
+    bool external = false;
+    if(length(form) > 3)
+    {
+      if(val(nth(form,3)) == "external" && global)
+      {
+        external = true;
+      }
+    }
     string fullname = (global?"@":"%")+varname+to_string(ScopeDepth);
     if(global && !typeonly)
-      push(fullname + " = global " + type + " zeroinitializer");
+      push(fullname + " = " + (external?"external":"") + " global " + type + (external?"":" zeroinitializer"));
     else if(!global && !typeonly)
       out += allocate(fullname,latest_type());
     if(!typeonly)
@@ -162,8 +169,8 @@ namespace Hylas
     out += emitCode(nth(form,2));
     if(latest_type() != res_type(get_res(address)))
       error(form,"Both arguments to (",opcode,") must be of the same type.");
-    return out + get_unique_res(latest_type()) + " = " + opcode + " " + latest_type()
-    + " " + get_res(address) + ", " + get_current_res();
+    return out + get_unique_res(latest_type()) + " = " + opcode + " " + res_type(get_res(res_version-1))
+    + " " + get_res(address) + ", " + get_res(res_version-1);
   }
   
   string shl(Form* form)                { return generic_bitop(form,"shl");  }
@@ -425,7 +432,7 @@ but an object of type '",latest_type(),"' was given.");
       }
     }
     //Emit code
-    out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_current_res() + ", i32 0, i32" + member_loc + "\n";
+    out += get_unique_tmp() + " = getelementptr inbounds " + type + " " + get_current_res() + ", i32 0, i32 " + member_loc + "\n";
     out += load(get_unique_res_address(member_type,to_string(tmp_version)),member_type,get_current_tmp());
     return out;
   }
@@ -1014,67 +1021,45 @@ but an object of type '",latest_type(),"' was given.");
     return out + constant(get_unique_res("i1"),"i1","true");
   }
   
-  string ghost_print(Form* form)
+  string loop_while(Form* form)
   {
-    string out = emitCode(nth(form,1));
-    string message;
-    bool ptr;
-    if(isFunctionPointer(latest_type()))
+    Form* test = nth(form,1);
+    Form* code = cdr(cdr(form));
+    string out;
+    if(code == NULL)
     {
-      message = "<0x%X pointer to function " + latest_type() + " with indirection " + to_string(countIndirection(latest_type())) + ">";
-      ptr = true;
-    }
-    else if(isPointer(latest_type()))
-    {
-      message = "<0x%X pointer to " + latest_type() + " with indirection " + to_string(countIndirection(latest_type())) + ">";
-      ptr = true;
-    }
-    else if(isInteger(latest_type()))
-    {
-      message = "<" + latest_type() + " unprintable integer (too wide)>";
-      ptr = false;
-    }
-    else if(isCoreType(latest_type()))
-    {
-      message = "<" + latest_type() + " unprintable floating point>";
-      ptr = false;
+      error(form,"A (while) loop needs a body following its test.");
     }
     else
     {
-      error(form,"I don't even know what to do with this type (",latest_type(),").");
+      out += emitCode(test);
+      if(latest_type() != "i1")
+      {
+	error(form,"The test in a (while) loop must return a boolean (i1).");
+      }
+      else
+      {
+	out += "derp";
+      }
     }
-    out += emitCode(readString("\""+message+"\""));
-    if(ptr)
-    {
-      out += gensym() + " = call i32 @printf(i8* " + get_current_res() 
-          + ", " + res_type(get_res(res_version-1)) + " " + get_res(res_version-1) + ")\n";
-    }
-    else
-    {
-      out += gensym() + " = call i32 @puts(i8* " + get_current_res() + ")\n";
-    }
-    out += constant(get_unique_res("i1"),"i1","true");
     return out;
   }
-  
-  /*!
-   * @brief Maps core function names to their corresponding functions.
-   */
+
   void init_stdlib()
   {
     Scope new_scope;
     master.SymbolTable.push_back(new_scope);
     //Init Core
-    TopLevel["def"]          = &def_global;
-    TopLevel["def-as"]       = &def_as_global;
-    Core["type"]         = &makeType;
-    Core["structure"]    = &makeStructure;
-    Core["generic"]      = &genericInterface;
+    Core["global"]           = &def_global;
+    Core["global-as"]        = &def_as_global;
+    Core["type"]             = &makeType;
+    Core["structure"]        = &makeStructure;
+    Core["generic"]          = &genericInterface;
     Core["asm"]              = &toplevel_asm;
     Core["inline-asm"]       = &inline_asm;
-    Core["word"]         = &word;
-    Core["prefix"]       = &prefix;
-    Core["postfix"]      = &postfix;
+    Core["word"]             = &word;
+    Core["prefix"]           = &prefix;
+    Core["postfix"]          = &postfix;
     Core["LLVM"]             = &embed_llvm;
     Core["inline-LLVM"]      = &embed_llvm;
     Core["function"]         = &define_function;
@@ -1087,7 +1072,6 @@ but an object of type '",latest_type(),"' was given.");
     Core["def"]              = &def_local;
     Core["def-as"]           = &def_as_local;
     Core["set"]              = &set;
-    //Core["ret"]              = &ret;
     Core["add"]              = &add;
     Core["fadd"]             = &fadd;
     Core["sub"]              = &sub;
@@ -1115,7 +1099,7 @@ but an object of type '",latest_type(),"' was given.");
     Core["zextend"]          = &zextend;
     Core["sextend"]          = &sextend;
     Core["pointer->integer"] = &ptrtoint;
-    Core["integer-pointer"]  = &inttoptr;
+    Core["integer->pointer"] = &inttoptr;
     Core["size"]             = &size;
     Core["bitcast"]          = &bitcast;
     Core["begin"]            = &begin;

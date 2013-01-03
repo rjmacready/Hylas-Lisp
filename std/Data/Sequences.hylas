@@ -3,11 +3,11 @@
   (capacity     word)
   (data         (pointer Type)))
 
-!!!! Definition
+! Definition
 
-!!!! Implementation
+! Implementation
 
-!!!! Macros
+! Macros
 
 (word < "(make-sequence ")
 (prefix < "(make-sequence ")

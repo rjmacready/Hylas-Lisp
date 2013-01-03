@@ -2,46 +2,34 @@
 
 !Datatypes
 
-(structure sqlite3
+(type sqlite3           opaque)
+(type sqlite3_backup    opaque)
+(type sqlite3_blob      opaque)
+(type sqlite3_context   opaque)
+(type sqlite3_int64     i64)
+(type sqlite3_uint64    i64)
+(type sqlite_int64      i64)
+(type sqlite_uint64     i64)
 
-  )
+!Globals
 
-(structure sqlite3_backup
-
-  )
-
-(structure sqlite3_blob
-
-  )
-
-(structure sqlite3_context
-
-  )
-
-(type sqlite3_int64 )
-(type sqlite3_uint64 )
-(type sqlite_int64 )
-(type sqlite_uint64 )
-
-(structure sqlite3_module
-  
-  )
-
-(structure sqlite3_mutex
-  
-  )
-
-(structure sqlite3_stmt
-  
-  )
-
-(structure sqlite3_value
-  
-  )
-
-(structure sqlite3_vfs
-  
-  )
+(global sqlite3_data_directory (pointer char) external)
 
 !Functions
+
+(foreign C sqlite3_aggregate_context (pointer byte) (pointer sqlite3_context) int)
+
+!!Initialization and shutting down
+
+(foreign C sqlite3_initialize int)
+(foreign C sqlite3_shutdown int)
+
+!!Opening
+
+(foreign C sqlite3_open int (pointer char) (pointer (pointer sqlite3)))
+(foreign C sqlite3_open16 int (pointer char) (pointer (pointer sqlite3)))
+(foreign C sqlite3_open_v2 int (pointer char) (pointer (pointer sqlite3)) int (pointer char))
+
+!!Closing
+(foreign C sqlite3_close (pointer sqlite3))
 

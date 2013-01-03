@@ -12,7 +12,7 @@ namespace Hylas
   inline void reseterror();
   
   class Error : public exception
-  { };
+  { int herp; };
   
   void Unwind();
   

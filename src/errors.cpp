@@ -77,7 +77,7 @@ namespace Hylas
   {
     print_errormode();
     error_print(text...);
-    master.errmsg += at(head);
+    //master.errmsg += at(head);
     if(master.output == HTML)
       master.errmsg += "</div>";
     Unwind();

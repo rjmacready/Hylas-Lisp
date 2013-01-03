@@ -114,8 +114,11 @@ namespace Hylas
   string exportRGB(RGB in);
   string matchKeyword(string in);
   map<string,RGB> defaultColorscheme();
-  string defaultCSS();
-  string getCSS();
+  
+  typedef string CSS;
+  
+  CSS defaultCSS();
+  CSS getCSS();
   
   enum ErrorType {NormalError,ReaderError,GenericError,MacroError};
   
@@ -189,7 +192,11 @@ namespace Hylas
   
   string get_unique_label();
   string get_label(long v); 
-  inline string get_current_label();  
+  inline string get_current_label();
+  /*!
+   * @brief Takes a string and returns the 'usable' version of the label, as
+   * opposed to the merely referentiable.
+   */
   inline string functional_label(string in);
   
   // Register Manipulation
@@ -219,9 +226,10 @@ namespace Hylas
   
   enum emissionContext { Top, Bottom };
   
-  string emitCode(Form* form, emissionContext ctx); 
+  string emitCode(Form* form/*, emissionContext ctx*/); 
   IR Compile(Form* form);
-  string JIT(IR code);
+  IR JIT(IR code);
+  string Run();
   void init_optimizer();
   void init();
   void restart();

@@ -190,7 +190,7 @@ namespace Hylas
       tmp_code += emitCode(nth(form,i));
     if(latest_type() != newfn.ret_type)
       error(form,"The return type of the function must match the type of the last form in it.");
-    master.SymbolTable.pop_back();
+    master.SymbolTable.erase(master.SymbolTable.end());
     push(tmp_code + "ret " + newfn.ret_type + " " + get_current_res() + "\n}");
     out += constant(get_unique_res(newfn.fn_ptr_type),newfn.fn_ptr_type,processed_name);
     return out;
@@ -267,7 +267,7 @@ namespace Hylas
       if(name == "print")
       {
         //This must be the ghost print function, because the protype didn't match any existing one
-        return ghost_print(in);
+        return out + ghost_print(in);
       }
       /*else if(isInteger(name))
       {

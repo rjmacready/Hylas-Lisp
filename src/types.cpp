@@ -320,17 +320,29 @@ namespace Hylas
     string name = val(nth(in,1));
     if(checkTypeExistence(name))
       error(in,"Type '",name,"' already exists.");
-    string type = printTypeSignature(nth(in,2));
-    MembersMap* isstruct = findStructure(type);
-    if(isstruct == NULL)
+    string type;
+    if(isatom(nth(in,2)))
     {
-      //cerr << "Not a structure" << endl;
-      tmp.definition = type;
+      if(val(nth(in,2)) == "opaque")
+      {
+        type = "opaque"; //Opaque types
+        tmp.definition = "opaque";
+      }
     }
-    else
+    type = printTypeSignature(nth(in,2));
+    if(type != "opaque")
     {
-      //cerr << "It's a structure" << endl;
-      tmp.definition = assembleDefinition(isstruct);     
+      MembersMap* isstruct = findStructure(type);
+      if(isstruct == NULL)
+      {
+        //cerr << "Not a structure" << endl;
+        tmp.definition = type;
+      }
+      else
+      {
+        //cerr << "It's a structure" << endl;
+        tmp.definition = assembleDefinition(isstruct);     
+      }
     }
     BasicTypes[name] = tmp;
     persistentPush("%"+ name + " = type " + tmp.definition);
@@ -635,15 +647,52 @@ namespace Hylas
     return "";
   }
   
+  string ghost_print(Form* form)
+  {
+    string message, out;
+    bool ptr = false;
+    if(isFunctionPointer(latest_type()))
+    {
+      message = "<0x%X pointer to function " + cutlast(latest_type()) + " with indirection " + to_string(countIndirection(latest_type())) + ">";
+      ptr = true;
+    }
+    else if(isPointer(latest_type()))
+    {
+      message = "<0x%X pointer to " + cutlast(latest_type()) + " with indirection " + to_string(countIndirection(latest_type())) + ">";
+      ptr = true;
+    }
+    else if(isInteger(latest_type()))
+    {
+      message = "<" + latest_type() + " unprintable integer (too wide)>";
+    }
+    else if(isCoreType(latest_type()))
+    {
+      message = "<" + latest_type() + " unprintable floating point>";
+    }
+    else
+    {
+      error(form,"I don't even know what to do with this type (",latest_type(),").");
+    }
+    out += emitCode(readString("\""+message+"\""));
+    if(ptr)
+    {
+      out += gensym() + " = call i32 (i8*,...)* @printf(i8* " + get_current_res() 
+          + ", " + res_type(get_res(res_version-1)) + " " + get_res(res_version-1) + ")\n";
+      out += emitCode(readString("\""+message+"\""));
+      //FIXME: Change this to sprintf etc.
+    }
+    return out;
+  }
+  
   void init_types()
   {
-    CoreTypes.push_back("half");
-    CoreTypes.push_back("float");
-    CoreTypes.push_back("double");
-    CoreTypes.push_back("x86_fp80");
-    CoreTypes.push_back("fp128");
-    CoreTypes.push_back("ppc_fp128");
-    CoreTypes.push_back("...");
+    CoreTypes.push_back("half");
+    CoreTypes.push_back("float");
+    CoreTypes.push_back("double");
+    CoreTypes.push_back("x86_fp80");
+    CoreTypes.push_back("fp128");
+    CoreTypes.push_back("ppc_fp128");
+    CoreTypes.push_back("...");
     //CoreTypes = {"half", "float", "double", "x86_fp80", "fp128", "ppc_fp128", "..." };
   }
 }

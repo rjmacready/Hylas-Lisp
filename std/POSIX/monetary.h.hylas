@@ -1,1 +1,1 @@
-(foreign C ssize_t strfmon (pointer char) size_t (pointer char))
+(foreign C strfmon word (pointer char) word (pointer char))

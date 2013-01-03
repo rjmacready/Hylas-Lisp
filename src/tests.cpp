@@ -213,6 +213,7 @@ namespace Hylas
     {
       cerr << "\n\nTest #" << to_string(i+1) << ":\n> " << tests[i] << "\n\n";
       JIT(Compile(readString(tests[i])));
+      Run();
       cin.get();
     }
   }

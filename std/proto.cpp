@@ -93,7 +93,7 @@ struct Foo
 
 char* print(Foo in)
 {
-  return cat("{",cat(print(in.bar),cat(", ",cat(print(in.baz),"}"))));
+  return base_cat("{",base_cat(print(in.bar),base_cat(", ",base_cat(print(in.baz),"}"))));
 }
   
 int main()
@@ -106,7 +106,7 @@ int main()
          print(3.14e-4f),
          print(3.14e-1),
          print("derp herp!!!"),
-         cat("Herp ",cat("Derp ","Berp")),
+         base_cat("Herp ",base_cat("Derp ","Berp")),
          print(Foo(1,3.14))
           );
   return 0;

@@ -169,7 +169,7 @@ namespace Hylas
     return in;
   }
   
-  string emitCode(Form* form, emissionContext ctx = Bottom)
+  string emitCode(Form* form/*, emissionContext ctx = Bottom*/)
   {
     string out;
     if(form == NULL)
@@ -196,7 +196,7 @@ namespace Hylas
         case Character:
         {
           string c = string(val(form),1,val(form).length()-2);
-          string address = "@str" + to_string<unsigned long>(++string_version);
+          string address = "@___string" + to_string<unsigned long>(++string_version);
           push(address + " = global [2 x i8] c\"" + c + "\0\0\"");
           out += get_unique_res("i8") + " = load i8* getelementptr inbounds ([2 x i8]* " + address + ", i32 0, i64 0)";
           break;
@@ -280,10 +280,8 @@ namespace Hylas
             //cerr << "Result: " << result << endl;
           }
           string type = "[" + to_string<unsigned long>(length+1) + " x i8]";
-          stringstream derp;
-          derp << "@str" << to_string<unsigned long>(++string_version) << " = global " << type << " c\"" << result << "\\00\"";
-          push(derp.str());
-          out = get_unique_res("i8*") + " = getelementptr " + type + "* @str" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
+          push("@___string" + to_string<unsigned long>(++string_version) + " = global " + type + " c\"" + result + "\\00\"");
+          out = get_unique_res("i8*") + " = getelementptr " + type + "* @___string" + to_string<unsigned long>(string_version) + ", i64 0, i64 0";
           break;
         }
         case Symbol:
@@ -309,14 +307,7 @@ namespace Hylas
       if(islist(car(form)))
         error(form,"Lists can't be used as function names in calls. Until I implement lambda.");
       string func = val(car(form));
-      map<string,hFuncPtr>::iterator seeker;
-      if(ctx == Top)
-      {
-        seeker = TopLevel.find(func);
-        if(seeker != TopLevel.end())
-          out = seeker->second(form);
-      }  
-      seeker = Core.find(func);
+      map<string,hFuncPtr>::iterator seeker = Core.find(func);
       if(seeker != Core.end())
         out = seeker->second(form);
       else
@@ -327,7 +318,6 @@ namespace Hylas
   
   IR Compile(Form* form)
   {
-    //form = readString("(print " + print(form) + ")");
     string out;
     string tmp;
     if(form == NULL)
@@ -350,7 +340,7 @@ namespace Hylas
         out = emitCode(form);
     }
     else
-      out = emitCode(form,Top);
+      out = emitCode(form/*,Top*/);
     for(unsigned long i = 0; i < master.Persistent.size(); i++)
       tmp += master.Persistent[i] + "\n";
     for(unsigned long i = 0; i < master.CodeStack.size(); i++)
@@ -365,26 +355,40 @@ namespace Hylas
     return {out,type};
   }
   
-  string JIT(IR code)
+  IR JIT(IR code)
   {
     SMDiagnostic errors;
     string parser_errors;
     ParseAssemblyString(code.assembly.c_str(),master.Program,errors,Context);
-    if(!errors.getMessage().empty())
-      nerror("IR Parsed with errors: ",errors.getMessage(),"\nCode: \n",code.assembly);
-    if(verifyModule(*master.Program,ReturnStatusAction,&parser_errors))
-      nerror("IR Parser Error: ",parser_errors);
-    if(master.debug)
-      master.Program->dump();
-    master.Passes.run(*master.Program);
     llvm::Function* entryfn = master.Engine->FindFunctionNamed("entry");
     if(entryfn == NULL)
       nerror("ERROR: Couldn't find program entry point.");
+    if(!errors.getMessage().empty())
+    {
+      entryfn->eraseFromParent();
+      nerror("IR Parsed with errors: ",errors.getMessage(),"\nCode: \n",code.assembly);
+    }
+    if(verifyModule(*master.Program,ReturnStatusAction,&parser_errors))
+    {
+      entryfn->eraseFromParent();
+      nerror("IR Parser Error: ",parser_errors);
+    }
+    if(master.debug)
+      master.Program->dump();
+    master.Passes.run(*master.Program);
+    return code;
+  }
+  
+  string Run()
+  {
+    llvm::Function* entryfn = master.Engine->FindFunctionNamed("entry");
+    if(entryfn == NULL)
+      nerror("Couldn't find program entry point.");
     std::vector<GenericValue> args;
     GenericValue retval = master.Engine->runFunction(entryfn,args);
     master.Engine->freeMachineCodeForFunction(entryfn);
     entryfn->eraseFromParent();
-    return string((char*)(retval.PointerVal));
+    return "" /*string((char*)(retval.PointerVal))*/;
   }
   
   void init_optimizer()
@@ -417,40 +421,43 @@ namespace Hylas
     init_types();
     init_optimizer();
     master.Engine =  EngineBuilder(master.Program).create();
-    JIT(Compile(readString("(begin                                            \
+    /*JIT(Compile(readString("(begin                                              \
   (foreign C puts int (pointer char))                                           \
   (foreign C printf int (pointer char) ...)                                     \
   (foreign C strlen word (pointer char))                                        \
   (foreign C strcat (pointer char) (pointer char) (pointer char))               \
-  (foreign C sprintf int (pointer char) (pointer char) ...)          \
+  (foreign C sprintf int (pointer char) (pointer char) ...)                     \
   (foreign C strcpy (pointer char) (pointer char) (pointer char))               \
                                                                                 \
   (foreign C malloc (pointer byte) word)                                        \
   (foreign C free void (pointer byte))                                          \
   (foreign C realloc (pointer byte) (pointer byte) word)                        \
                                                                                 \
-  (function print (pointer char) ((in byte))                          \
+  (function print (pointer char) ((in bool))                                    \
+    (if in                                                                      \
+      \"true\"                                                                  \
+      \"false\"))                                                               \
+                                                                                \
+  (function print (pointer char) ((in byte))                                    \
     (def str (create char 2))                                                   \
-    (sprintf str \"%c\" in)\
-    str)                                                    \
+    (sprintf str \"%c\" in)                                                     \
+    str)                                                                        \
                                                                                 \
   (function print (pointer char) ((in short))                                   \
     (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))                    \
+    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
     (def str (create char size))                                                \
-    (destroy buf)                                                               \
     (strcpy str buf))                                                           \
                                                                                 \
   (function print (pointer char) ((in int))                                     \
     (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))\
+    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
     (def str (create char size))                                                \
-    (destroy buf)                                                               \
     (strcpy str buf))                                                           \
                                                                                 \
   (function print (pointer char) ((in long))                                    \
     (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))                    \
+    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
     (def str (create char size))                                                \
     (strcpy str buf))                                                           \
                                                                                 \
@@ -458,37 +465,35 @@ namespace Hylas
                                                                                 \
   (function print (pointer char) ((in float))                                   \
     (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%g\" in) (truncate 1 i32)) word))                      \
+    (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
     (def str (create char size))                                                \
-    (destroy buf)                                                               \
     (strcpy str buf))                                                           \
                                                                                 \
   (function print (pointer char) ((in double))                                  \
     (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%g\" in) (truncate 1 i32)) word))                    \
+    (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
     (def str (create char size))                                                \
-    (destroy buf)                                                               \
     (strcpy str buf))                              \
                                                                                 \
   (function print (pointer char) ((in x86_fp80))                                \
     (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%g\" in) (truncate 1 i32)) word))                      \
+    (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
     (def str (create char size))                                                \
-    (destroy buf)                                                               \
     (strcpy str buf))                                                           \
                                                                                 \
-                                                 \
+                                                                                \
                                                                                 \
   (function print (pointer char) ((in (pointer char)))                          \
     in)                                                                         \
                                                                                 \
   (function _base_cat (pointer char) ((a (pointer char))                        \
-                                    (b (pointer char)))                         \
+                                      (b (pointer char)))                       \
     (def length (add 1 (add (strlen a) (strlen b))))                            \
     (def str (create char length))                                              \
     (strcat str a)                                                              \
     (strcat str b))                                                             \
   )")));
+    Run();*/
   }
   
   void restart()
@@ -588,8 +593,7 @@ namespace Hylas
       case Symbol:
       {
         //Is it a TopLevel or Core function?
-        if((TopLevel.find(in) != TopLevel.end()) ||
-          (Core.find(in) != Core.end()))
+        if(Core.find(in) != Core.end())
           in = exportRGB(master.Colorscheme.find("Core")->second) + in + "</div>";
         //Is it a symbol?
         else if(lookup(in) != NULL)
@@ -628,7 +632,7 @@ namespace Hylas
     return tmp;
   }
   
-  string defaultCSS()
+  CSS defaultCSS()
   {
     string tmp;
     tmp = ".error { border: 1px solid #aaa; box-shadow: 5px 5px 5px #ccc;\
@@ -640,6 +644,6 @@ namespace Hylas
     return tmp;
   }
   
-  string getCSS()
+  CSS getCSS()
   { return "<style type=\"text/css\">" + master.CSS + "</style>"; }
 }

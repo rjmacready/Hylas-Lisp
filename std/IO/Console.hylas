@@ -1,4 +1,4 @@
-!!!! Definition
+! Interface
 
 (macro out (&rest)
   (doc "Print a bunch of things to stdout"))
@@ -8,5 +8,5 @@
 
 
 
-!!!! Implementation
+! Implementation
 

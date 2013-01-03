@@ -27,7 +27,10 @@ namespace Hylas
   Form* append(Form* first, Form* second);
   inline unsigned long length(Form* in);
   inline Form* nth(Form* in, long location);
-  
+  Form* removeNth(Form* in, unsigned long n);
+  /*!
+  * @brief Generate the documentation HTML from global tables.
+  */
   enum AnalysisType {BooleanTrue, BooleanFalse, Integer, Character, Real, String, Symbol, Unidentifiable};  
   AnalysisType analyze(string input);
   inline Form* makeForm(string in, bool tag);
@@ -42,8 +45,8 @@ namespace Hylas
   Form* expand(Form* in, unsigned char order);
   Form* expandEverything(Form* in);
   Form* read(FILE* in);
-  Form* readFile(string filename);
   Form* readString(string in);
+  Form* readFile(string filename);
   
   string print(Form* in);
 }

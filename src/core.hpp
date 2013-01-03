@@ -11,7 +11,6 @@ namespace Hylas
   
   typedef string (*hFuncPtr)(Form* code);
   
-  map<string,hFuncPtr> TopLevel;
   map<string,hFuncPtr> Core;
   
   vector<string> allowedIntComparisons;
@@ -147,12 +146,7 @@ namespace Hylas
      * 
      */
   string destroy(Form* form);
-    /*!
-     * @brief The 'ghost' print function, takes care of printing values for
-     * which no 'real' print function has been defined (Pointers, fn pointers).
-     * 
-     */
-  string ghost_print(Form* form);
+  string loop_while(Form* form);
     /*!
      * @brief Map function names to their pointers
      * 

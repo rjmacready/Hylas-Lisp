@@ -63,6 +63,12 @@ namespace Hylas
   void addGeneric(string name, Generic in);  
   Generic addGenericAttachment(string name, Form* in);  
   Generic makeGeneric(Form* in);  
-  string genericInterface(Form* form);  
+  string genericInterface(Form* form);
+    /*!
+     * @brief The 'ghost' print function, takes care of printing values for
+     * which no 'real' print function has been defined (Pointers, fn pointers).
+     * 
+     */
+  string ghost_print(Form* form);
   void init_types();
 }

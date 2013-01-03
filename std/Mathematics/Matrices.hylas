@@ -7,7 +7,6 @@
 
 (function Matrix (pointer byte) ((rows    word)
                                  (columns word))
-  (def ptr (calloc (mul (mul rows columns)
-                        (size (pointer double))))))
+  (def ptr (create double (mul rows columns)))
 
   

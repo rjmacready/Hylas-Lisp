@@ -141,6 +141,20 @@ whose length is %li.",location,print(in).c_str(),length(in));
     return car(node);
   }
   
+  Form* removeNth(Form* list, unsigned long n)
+  {
+    if(isatom(list))
+      error(list,"Tried to delete the ",to_string(n),"-th of an atom.");
+    if(n == 0)
+    {
+      return cdr(list);
+    }
+    Form* rest = cdr(nth(list,n-1));
+    if(rest != NULL)
+      cdr(rest) = cddr(rest);
+    return rest;
+  }
+  
   unsigned long curline = 0;
   unsigned int curcolumn = 0;
   
@@ -449,6 +463,8 @@ whose length is %li.",location,print(in).c_str(),length(in));
   Form* read(FILE* in)
   {
     master.errormode = ReaderError;
+    if(in == NULL)
+      nerror("Can't read from stdin.");
     string token = next_token(in);
     if(token == "(")
       return read_tail(in);
@@ -457,16 +473,6 @@ whose length is %li.",location,print(in).c_str(),length(in));
     Form* result = makeForm(token,Atom);
     reseterror();
     return expandEverything(result);
-  }
-  
-  Form* readFile(string filename)
-  {
-    master.errormode = ReaderError;
-    FILE* ptr = fopen(filename.c_str(),"r");
-    Form* tmp = read(ptr);
-    fclose(ptr);
-    reseterror();
-    return expandEverything(tmp);
   }
   
   Form* readString(string in)
@@ -480,7 +486,27 @@ whose length is %li.",location,print(in).c_str(),length(in));
     fclose(ptr);
     //remove("reader.tmp");
     reseterror();
-    return expandEverything(readFile("reader.tmp"));
+    return expandEverything(read(fopen("reader.tmp","r+")));
+  }
+  
+  Form* readFile(string filename)
+  {
+    master.errormode = ReaderError;
+    ifstream file(filename,ifstream::in);
+    if(!file.good())
+      nerror("Failed to read file '",filename,"'.");
+    string data;
+    char ch;
+    while(file.good())
+    {
+       ch = file.get();       // get character from file
+       if(file.good())
+        data += ch;
+    }
+    Form* tmp = readString("(begin"+data+')');
+    file.close();
+    reseterror();
+    return expandEverything(tmp);
   }
   
   string print(Form* in)
