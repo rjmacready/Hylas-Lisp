@@ -4,7 +4,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 # Examples
 
-**Recursive, Tail Call-Optimized Fibonacci Function:**
+## Recursive, Tail Call-Optimized Fibonacci Function:
 
 ```lisp
 (function fib i64 ((n i64))
@@ -14,7 +14,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
          (fib (sub n 2)))))
 ```
 
-**Calling a foreign function:**
+## Calling a foreign function:
 
 ```lisp
 (foreign C printf i32 (pointer i8) ...)
@@ -22,7 +22,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 (printf "Hello, world! This is a double, in scientific notation: %e", 3.141592)
 ```
 
-**Using a foreign library:**
+## Using a foreign library:
 
 ```lisp
 (link "libSDL.so")
@@ -37,6 +37,10 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
   (b            byte)
   (unused       byte))
 ```
+
+# Benchmarks
+
+![Fibonacci benchmarks](http://eudoxia0.github.com/Hylas-Lisp/img/fib.jpg)
 
 # Types
 
