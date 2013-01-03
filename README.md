@@ -40,7 +40,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 # Benchmarks
 
-## Recursive Fibonacci with **n**=40
+## Recursive Fibonacci with _n_=40
 
 ![Fibonacci benchmarks](http://eudoxia0.github.com/Hylas-Lisp/img/fib.jpg)
 
@@ -48,7 +48,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 <table>
     <tr>
-        <td><strong>Kind</strong></td><td><strong>C</strong></td><td><strong>Hylas</strong></td>
+        <th><strong>Kind</strong></th><th><strong>C/C++</strong></th><th><strong>Hylas</strong></th>
     </tr>
     <tr>
         <td><strong>Integers</strong></td><td><code>char</code>, <code>short</code>, <code>int</code>, <code>long</code>, <code>long long</code>, signed and unsigned.</td>
@@ -65,7 +65,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
         </td>
     </tr>
     <tr>
-        <td><strong>Floating-Point</strong></td><td><span>float, double, long double</span></td><td><span>half, float, double, fp128, x86_fp80, ppc_fp128</span></td>
+        <td><strong>Floating-Point</strong></td><td><span><code>float</code>, <code>double</code>, <code>long double</code></span></td><td><span><code>half</code>, <code>float</code>, <code>double</code>, <code>fp128</code>, <code>x86_fp80</code>, <code>ppc_fp128</code></span></td>
     </tr>
     <tr>
         <td><strong>Aggregate</strong></td><td><span>Structures (Can be opaque), arrays, pointers and unions. Has void pointers.</td><td>Structures (Can be opaque) and pointers. Arrays are pointers. Doesn't have void pointers, can be implemented through coercion functions.</span></td>
