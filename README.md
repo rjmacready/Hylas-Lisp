@@ -40,6 +40,8 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 # Benchmarks
 
+## Recursive Fibonacci with **n**=40
+
 ![Fibonacci benchmarks](http://eudoxia0.github.com/Hylas-Lisp/img/fib.jpg)
 
 # Types
