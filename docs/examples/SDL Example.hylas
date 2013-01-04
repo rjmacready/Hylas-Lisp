@@ -1,0 +1,75 @@
+(begin
+(foreign C sleep int int)
+
+(link "/usr/lib/libSDL.so")
+
+(foreign C SDL_Init void i64)
+(foreign C SDL_Delay void i64)
+(foreign C SDL_Quit void)
+
+(structure SDL_Color
+  (r            byte)
+  (g            byte)
+  (b            byte)
+  (unused       byte))
+
+(structure SDL_Palette
+  (ncolors      int)
+  (colors       (pointer SDL_Color)))
+
+(structure SDL_PixelFormat
+  (palette              (pointer SDL_Palette))
+  (BitsPerPixel         byte)
+  (BytesPerPixel        byte)
+  (Rloss                byte)
+  (Gloss                byte)
+  (Bloss                byte)
+  (Aloss                byte)
+  (Rshift               byte)
+  (Gshift               byte)
+  (Bshift               byte)
+  (Ashift               byte)
+  (colorkey             byte)
+  (alpha                byte))
+
+(structure SDL_Rect
+  (x    short)
+  (y    short)
+  (w    short)
+  (h    short))
+
+(structure SDL_Surface
+  (flags        int)
+  (format       (pointer SDL_PixelFormat))
+  (w            int)
+  (h            int)
+  (pitch        short)
+  (pixels       (pointer byte))
+  (clip_rect    SDL_Rect)
+  (refcount     int))
+
+(foreign C SDL_SetVideoMode (pointer SDL_Surface)
+  int int int int)
+
+(foreign C SDL_WM_SetCaption void (pointer byte) int)
+
+(structure SDL_UserEvent
+  (type         byte)
+  (code         int)
+  (data1        (pointer byte))
+  (data2        (pointer byte)))
+
+
+(structure SDL_Event
+  (all          SDL_UserEvent))
+
+(SDL_Init 65535)
+(global surface (SDL_SetVideoMode
+               (truncate 800 i32)
+               (truncate 600 i32)
+               (truncate 32 i32)
+               (truncate (bitwise-or 1 (bitwise-or 2 1073741824)) i32)))
+(global-as windowEvent SDL_Event)
+(SDL_WM_SetCaption "OpenGL" (truncate 0 i32))
+(sleep (truncate 10 i32))
+(SDL_Quit))
