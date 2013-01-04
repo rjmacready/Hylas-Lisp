@@ -55,22 +55,24 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
         <td>i1, i2, i3... i8388607. (Number indicates the bit-width).<br> Signature is a property of <em>operations</em>, not types.
         Aliases exist for the most common ones:
         <ul>
-        <li> <code>bool</code>: i1</li>
-        <li> <code>char</code>, byte: i8 or i7, depending on the architecture</li>
-        <li> <code>short</code>: i16</li>
-        <li> <code>int</code>: i32</li>
-        <li> <code>long</code>: i64</li>
-        <li> <code>word</code>: i32 on 32-bit machines, i64 on 64-bit machines (Width of a machine word)</li>
+        <li> <code>bool</code>: i1.</li>
+        <li> <code>char</code>, <code>byte</code>: i8 or i7, depending on the architecture.</li>
+        <li> <code>short</code>: i16.</li>
+        <li> <code>int</code>: i32.</li>
+        <li> <code>long</code>: i64.</li>
+        <li> <code>word</code>: i32 on 32-bit machines, i64 on 64-bit machines (Width of a machine word, to be used like <code>size_t</code>).</li>
         </ul>
         </td>
     </tr>
     <tr>
-        <td><strong>Floating-Point</strong></td><td><span><code>float</code>, <code>double</code>, <code>long double</code></span></td><td><span><code>half</code>, <code>float</code>, <code>double</code>, <code>fp128</code>, <code>x86_fp80</code>, <code>ppc_fp128</code></span></td>
+        <td><strong>Floating-Point</strong></td><td><code>float</code>, <code>double</code>, <code>long double</code>.</td>
+		<td><code>half</code>, <code>float</code>, <code>double</code>, <code>fp128</code>, <code>x86_fp80</code>, <code>ppc_fp128</code>.</td>
     </tr>
     <tr>
         <td><strong>Aggregate</strong></td><td><span>Structures (Can be opaque), arrays, pointers and unions. Has void pointers.</td><td>Structures (Can be opaque) and pointers. Arrays are pointers. Doesn't have void pointers, can be implemented through coercion functions.</span></td>
     </tr>
     <tr>
-        <td><strong>Standard Library</strong></td><td><code>size_t</code>, <code>FILE*</code>, <code>_Bool</code></td><td><span>Hash Tables, Sequences (Resizable arrays, bound-checked arrays), filesystem-independent Filepath and Process objects...</span></td>
+        <td><strong>Standard Library</strong></td><td><code>size_t</code>, <code>FILE*</code>, <code>_Bool</code>.</td>
+		<td><span>Hash Tables, Sequences (Resizable arrays, bound-checked arrays), filesystem-independent Filepath and Process objects...</span></td>
     </tr>
 </table>
