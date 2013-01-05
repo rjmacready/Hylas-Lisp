@@ -44,6 +44,19 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 ![Fibonacci benchmarks](http://eudoxia0.github.com/Hylas-Lisp/img/fib.jpg)
 
+# Documentation
+
+Documentation on the _language_ is available as a series of [Markdown]() files in the `docs` folder, and can be built using Make:
+
+```
+$ cd docs
+$ make
+```
+
+This will generate the HTML files in the `docs/html` folder. Use `make clean` to delete them.
+
+Documentation on the _compiler_ is available as Doxygen comments, the Doxyfile being in the same `docs` folder. A Make recipe (`doxygen`) can be used to build the output into the `docs/Doxygen` folder.
+
 # Types
 
 <table>
