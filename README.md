@@ -46,7 +46,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 # Documentation
 
-Documentation on the _language_ is available as a series of [Markdown]() files in the `docs` folder, and can be built using Make:
+Documentation on the _language_ is available as a series of [Markdown](http://daringfireball.net/projects/markdown/) files in the `docs` folder, and can be built using Make and [Pandoc](http://johnmacfarlane.net/pandoc/):
 
 ```
 $ cd docs

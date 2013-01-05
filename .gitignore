@@ -12,3 +12,4 @@
 *.tmp
 docs/Doxygen/*
 docs/html/*
+*.kate-swp
