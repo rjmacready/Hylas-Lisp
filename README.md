@@ -7,7 +7,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 ## Recursive, Tail Call-Optimized Fibonacci Function:
 
 ```lisp
-(function fib i64 ((n i64))
+(recursive fib i64 ((n i64))
   (if (< n 2)
     n
     (add (fib (sub n 1))
