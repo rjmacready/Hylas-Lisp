@@ -1,6 +1,12 @@
 @charset "utf-8";
-@import url(http://fonts.googleapis.com/css?family=Open+Sans+Condensed:300);
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:300);
 @import url(http://fonts.googleapis.com/css?family=Pontano+Sans);
+
+h1,h2,h3,h4,h5 {
+  font-family: 'Open Sans', sans-serif;
+}
+
+hr {border:1px dotted #E0E0E0;clear:both;}
 
 body {
   margin:50px auto;
@@ -16,15 +22,25 @@ body {
   -webkit-border-radius: 10px;
   -moz-border-radius: 10px;
   border-radius: 10px;
+  width:830px;
+  margin: 0 auto;
+  overflow: auto;
+  clear:both;
 }
 
 .cleft {
-  position:relative; width:50%; float:left;
-  text-align:center;
+  width: 40%;
+  float: left;
+  text-align: center;
 }
+
+.cleft img { width:320px; }
+
 .cright {
-  position:relative; width:50%; float:right;
+  width: 50%;
+  float: right;
   border-left: 1px solid black;
+  padding: 20px;
 }
 
 a {
@@ -55,4 +71,36 @@ li {list-style-type: upper-roman;}
 .docs p {
   text-align: justify;
   text-indent: 10px;
+}
+
+/* Inline Code (outside of large listings) */
+
+p code, span code {
+
+  background: #E8E8E8;
+  border: 1px solid #B0B0B0;
+  border-radius: 3px;
+  padding: 1px;
+}
+
+/* Pretty Tables */
+
+table {
+  border: 2px solid #CCCCCC;
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid #CCC;
+  padding: 5px;
+}
+
+th { text-align: center; }
+
+tr:nth-of-type(2n + 2) {
+    background-color: #ECF7FF;
+}
+
+tr:nth-of-type(2n + 3) {
+    background-color: #FBFDFF;
 }

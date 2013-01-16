@@ -360,6 +360,8 @@ namespace Hylas
     SMDiagnostic errors;
     string parser_errors;
     ParseAssemblyString(code.assembly.c_str(),master.Program,errors,Context);
+	printf("hur");
+	master.Program->dump();
     llvm::Function* entryfn = master.Engine->FindFunctionNamed("entry");
     if(entryfn == NULL)
       nerror("ERROR: Couldn't find program entry point.");
@@ -398,7 +400,7 @@ namespace Hylas
     master.Passes.add(createReassociatePass());
     master.Passes.add(createGVNPass());
     master.Passes.add(createCFGSimplificationPass());
-    master.Passes.add(createAggressiveDCEPass());
+    //master.Passes.add(createAggressiveDCEPass());
   }
    
   void init()
@@ -421,79 +423,87 @@ namespace Hylas
     init_types();
     init_optimizer();
     master.Engine =  EngineBuilder(master.Program).create();
-    /*JIT(Compile(readString("(begin                                              \
-  (foreign C puts int (pointer char))                                           \
-  (foreign C printf int (pointer char) ...)                                     \
-  (foreign C strlen word (pointer char))                                        \
-  (foreign C strcat (pointer char) (pointer char) (pointer char))               \
-  (foreign C sprintf int (pointer char) (pointer char) ...)                     \
-  (foreign C strcpy (pointer char) (pointer char) (pointer char))               \
-                                                                                \
-  (foreign C malloc (pointer byte) word)                                        \
-  (foreign C free void (pointer byte))                                          \
-  (foreign C realloc (pointer byte) (pointer byte) word)                        \
-                                                                                \
-  (function print (pointer char) ((in bool))                                    \
-    (if in                                                                      \
-      \"true\"                                                                  \
-      \"false\"))                                                               \
-                                                                                \
-  (function print (pointer char) ((in byte))                                    \
-    (def str (create char 2))                                                   \
-    (sprintf str \"%c\" in)                                                     \
-    str)                                                                        \
-                                                                                \
-  (function print (pointer char) ((in short))                                   \
-    (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
-    (def str (create char size))                                                \
-    (strcpy str buf))                                                           \
-                                                                                \
-  (function print (pointer char) ((in int))                                     \
-    (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
-    (def str (create char size))                                                \
-    (strcpy str buf))                                                           \
-                                                                                \
-  (function print (pointer char) ((in long))                                    \
-    (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
-    (def str (create char size))                                                \
-    (strcpy str buf))                                                           \
-                                                                                \
-                                     \
-                                                                                \
-  (function print (pointer char) ((in float))                                   \
-    (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
-    (def str (create char size))                                                \
-    (strcpy str buf))                                                           \
-                                                                                \
-  (function print (pointer char) ((in double))                                  \
-    (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
-    (def str (create char size))                                                \
-    (strcpy str buf))                              \
-                                                                                \
-  (function print (pointer char) ((in x86_fp80))                                \
-    (def buf (create char 200))                                                 \
-    (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
-    (def str (create char size))                                                \
-    (strcpy str buf))                                                           \
-                                                                                \
-                                                                                \
-                                                                                \
-  (function print (pointer char) ((in (pointer char)))                          \
-    in)                                                                         \
-                                                                                \
-  (function _base_cat (pointer char) ((a (pointer char))                        \
-                                      (b (pointer char)))                       \
-    (def length (add 1 (add (strlen a) (strlen b))))                            \
-    (def str (create char length))                                              \
-    (strcat str a)                                                              \
-    (strcat str b))                                                             \
-  )")));
-    Run();*/
+	try
+	{
+	  JIT(Compile(readString("(begin                                              \
+	(foreign C printf int (pointer char) ...)                                     \
+	(foreign C puts int (pointer char))                                           \
+	(foreign C strlen word (pointer char))                                        \
+	(foreign C strcat (pointer char) (pointer char) (pointer char))               \
+	(foreign C sprintf int (pointer char) (pointer char) ...)                     \
+	(foreign C strcpy (pointer char) (pointer char) (pointer char))               \
+																				  \
+	(foreign C malloc (pointer byte) word)                                        \
+	(foreign C free void (pointer byte))                                          \
+	(foreign C realloc (pointer byte) (pointer byte) word)                        \
+																				  \
+	(function print (pointer char) ((in bool))                                    \
+	  (if in                                                                      \
+		\"true\"                                                                  \
+		\"false\"))                                                               \
+																				  \
+	(function print (pointer char) ((in byte))                                    \
+	  (def str (create char 2))                                                   \
+	  (sprintf str \"%c\" in)                                                     \
+	  str)                                                                        \
+																				  \
+	(function print (pointer char) ((in short))                                   \
+	  (def buf (create char 200))                                                 \
+	  (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
+	  (def str (create char size))                                                \
+	  (strcpy str buf))                                                           \
+																				  \
+	(function print (pointer char) ((in int))                                     \
+	  (def buf (create char 200))                                                 \
+	  (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
+	  (def str (create char size))                                                \
+	  (strcpy str buf))                                                           \
+																				  \
+	(function print (pointer char) ((in long))                                    \
+	  (def buf (create char 200))                                                 \
+	  (def size (extend (add (sprintf buf \"%i\" in) (truncate 1 i32)) word))     \
+	  (def str (create char size))                                                \
+	  (strcpy str buf))                                                           \
+																				  \
+									  \
+																				  \
+	(function print (pointer char) ((in float))                                   \
+	  (def buf (create char 200))                                                 \
+	  (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
+	  (def str (create char size))                                                \
+	  (strcpy str buf))                                                           \
+																				  \
+	(function print (pointer char) ((in double))                                  \
+	  (def buf (create char 200))                                                 \
+	  (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
+	  (def str (create char size))                                                \
+	  (strcpy str buf))                              \
+																				  \
+	(function print (pointer char) ((in x86_fp80))                                \
+	  (def buf (create char 200))                                                 \
+	  (def size (extend (add (sprintf buf \"%E\" in) (truncate 1 i32)) word))     \
+	  (def str (create char size))                                                \
+	  (strcpy str buf))                                                           \
+																				  \
+																				  \
+																				  \
+	(function print (pointer char) ((in (pointer char)))                          \
+	  in)                                                                         \
+																				  \
+	(function _base_cat (pointer char) ((a (pointer char))                        \
+										(b (pointer char)))                       \
+	  (def length (add 1 (add (strlen a) (strlen b))))                            \
+	  (def str (create char length))                                              \
+	  (strcat str a)                                                              \
+	  (strcat str b))                                                             \
+	)")));
+	  Run();
+	}
+	catch(exception except)
+    {
+      cerr << getError() << endl;
+	  exit(-1);
+    }
   }
   
   void restart()

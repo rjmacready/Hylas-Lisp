@@ -4,7 +4,7 @@
     * [A Book Database](book_db.html)
     * [GUI Currency Converter](gui_converter.html)
     * [Graphics with Galatea](galatea.html)
-* [Code: Common, Fast, Recursive, Inline and Foreign Functions](functions.html)
+* [Code: Fast, Recursive, Inline and Foreign Functions](functions.html)
 * [Data: Sequences, Strings, Files, Hash Tables, Graphs...](data.html)
 * [Generics](generics.html)
 * [Text](text.html)

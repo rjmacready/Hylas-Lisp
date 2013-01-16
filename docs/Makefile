@@ -1,6 +1,6 @@
 DOCBASEFLAGS = -f markdown --smart --normalize --mathml -t html5\
 	--css=../res/css/style.css --css=../res/css/hylas.css\
-	--highlight-style pygments
+	--highlight-style tango
 TOCFLAGS = $(DOCBASEFLAGS) --template=res/templates/index.template
 DOCFLAGS = $(DOCBASEFLAGS) --template=res/templates/doc.template
 default:docs
