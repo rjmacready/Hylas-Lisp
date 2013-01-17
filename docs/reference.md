@@ -1,6 +1,12 @@
+% Language Reference
+
 # Basic Operations
 
 ## `if`
+
+## `def`
+
+## `global`
 
 # Basic Mathematics
 
@@ -98,8 +104,25 @@
 	(doc "docstring"))
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+## `make-structure`
+
+## `access`
+
+## `array`
+
+## `nth`
+
 # Generic Types
 
+# Operations on Types
+
+## `typeof`
+
+## `pointer`
+
+## `unpointer`
+
+## `indirection`
 
 # Assembly
 
@@ -118,6 +141,14 @@
 ## `reallocate`
 
 ## `destroy`
+
+## `allocate`
+
+## `store`
+
+## `load`
+
+## `address`
 
 # Metaprogramming
 
@@ -139,6 +170,9 @@
 
 ## `link`
 
+## `import`
+
+## `from`
 
 # Namespaces
 
