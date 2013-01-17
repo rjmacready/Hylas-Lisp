@@ -26,6 +26,9 @@ body {
   margin: 0 auto;
   overflow: auto;
   clear:both;
+  -webkit-box-shadow: rgba(0,0,0,0.8) 0px 0 10px;
+  -moz-box-shadow: rgba(0,0,0,0.8) 0 0 10px;
+  box-shadow: rgba(0,0,0,0.8) 0 0 10px;
 }
 
 .cleft {
@@ -45,12 +48,12 @@ body {
 
 a {
   border: 1px solid rgba(0,0,0,0);
-  color: red;
+  color: purple;
   text-decoration: none;
 }
 
 a:visited {
-  color: purple;
+  color: red;
 }
 
 a:hover {
@@ -66,6 +69,9 @@ li {list-style-type: upper-roman;}
   -webkit-border-radius: 10px;
   -moz-border-radius: 10px;
   border-radius: 10px;
+  -webkit-box-shadow: rgba(0,0,0,0.8) 0px 0 10px;
+  -moz-box-shadow: rgba(0,0,0,0.8) 0 0 10px;
+  box-shadow: rgba(0,0,0,0.8) 0 0 10px;
 }
 
 .docs p {
@@ -75,7 +81,7 @@ li {list-style-type: upper-roman;}
 
 /* Inline Code (outside of large listings) */
 
-p code, span code {
+p code, li code, td code {
 
   background: #E8E8E8;
   border: 1px solid #B0B0B0;

@@ -203,9 +203,20 @@ These operations allow you to embed LLVM Intermediate Representation or pure ass
 
 ## `link`
 
+Dynamically links to a foreign library.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.commonlisp .Hylas}
+(link "libSDL.so")
+(link "/usr/lib/libkhtml.so.5")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ## `import`
 
 Imports a `.hylas` file given its filepath.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.commonlisp .Hylas}
+(import "../include/regexp.hylas")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## `from`
 
@@ -243,4 +254,14 @@ Opens a new namespace. All new symbols (Function, variable definitions, etc.) un
         ...))
         
 (Bank:createAccount "John Smith" 314.5)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Nested namespaces:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.commonlisp .Hylas}
+(namespace Foo
+  (namespace Bar
+	(function Baz ...)))
+
+(Foo:Bar:Baz ...)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

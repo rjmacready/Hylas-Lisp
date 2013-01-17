@@ -43,10 +43,10 @@ for(var i = 0; i < elements.length; i++)
     if((text[j] == '(') && !inString)
     {
       Colors.push(colGen());
-      text = text.substr(0,j) + "<div class=\"paren close\" style=\"color:" + Colors[Colors.length-1] + "\"><strong>&#40;</strong></div>" + text.substr(j+1);
+      text = text.substr(0,j) + "<span class=\"paren close\" style=\"color:" + Colors[Colors.length-1] + "\"><strong>&#40;</strong></span>" + text.substr(j+1);
     }
     else if((text[j] == ')') && !inString)
-      text = text.substr(0,j) + "<div class=\"paren close\" style=\"color:" + Colors.pop() + "\"><strong>&#41;</strong></div>" + text.substr(j+1);
+      text = text.substr(0,j) + "<span class=\"paren close\" style=\"color:" + Colors.pop() + "\"><strong>&#41;</strong></span>" + text.substr(j+1);
   }
-  elements[i].innerHTML = "<div class=\"hylas-code\">" + text + "</div>";
+  elements[i].innerHTML = "<span class=\"hylas-code\">" + text + "</span>";
 }
