@@ -265,3 +265,5 @@ Nested namespaces:
 
 (Foo:Bar:Baz ...)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Introspection

@@ -100,7 +100,7 @@ namespace Hylas
  the same type. Here, the first operand was of type '",res_type(get_res(address)),\
 "', while the second was of type '",latest_type(),"'.");       
     return out + get_unique_res(latest_type()) + " = " + opcode + " " + latest_type()
-    + " " + get_res(address) + ", " + get_res(res_version-1);
+    + " " + get_res(address) + ", " + get_res(res_version/*-1*/);
   }
   
   string add(Form* form)                { return generic_math(form,"add");   }
@@ -193,7 +193,7 @@ number of bytes, but an object of type '",type,"' was given.");
 number of bytes, but an integer with a width of ",to_string(width(type))," was given.");
     push("declare " + type + " @llvm.bswap." + type + "(" + type + " %n)");
     return out + get_unique_res(type) + " = call " + type + " @llvm.bswap." + type + "(" + type
-           + " " + get_res(res_version-1);
+           + " " + get_res(res_version/*-1*/);
   }
   
   string count_ones(Form* form)
@@ -205,7 +205,7 @@ number of bytes, but an integer with a width of ",to_string(width(type))," was g
 object of type '",type,"' was given.");
     push("declare " + type + " = call " + type + " @llvm.ctpop." + type + "(" + type + " %n)");
     return out + get_unique_res(type) + " = @llvm.ctpop." + type + "(" + type
-           + " " + get_res(res_version-1);
+           + " " + get_res(res_version/*-1*/);
   }
   
   /*
@@ -230,8 +230,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (truncate) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = trunc " + res_type(get_res(res_version-1)) + " "
-            + get_res(res_version-1) + " to " + to;
+      return out + get_unique_res(to) + " = trunc " + res_type(get_res(res_version/*-1*/)) + " "
+            + get_res(res_version/*-1*/) + " to " + to;
     }
     else if(isCoreType(latest_type())) //Automatically a float
     {
@@ -245,8 +245,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (truncate) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = fptrunc " + res_type(get_res(res_version-1)) + " "
-            + get_res(res_version-1) + " to " + to;
+      return out + get_unique_res(to) + " = fptrunc " + res_type(get_res(res_version/*-1*/)) + " "
+            + get_res(res_version/*-1*/) + " to " + to;
     }
     else
       error(form,"The first argument to truncate must be an integer or a \
@@ -269,8 +269,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (extend) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = sext " + res_type(get_res(res_version-1)) + " "
-            + get_res(res_version-1) + " to " + to;
+      return out + get_unique_res(to) + " = sext " + res_type(get_res(res_version/*-1*/)) + " "
+            + get_res(res_version/*-1*/) + " to " + to;
     }
     else if(isCoreType(latest_type())) //Automatically a float
     {
@@ -284,8 +284,8 @@ argument was '",to,"'.");
         error(form,"The bit width of the first argument to (truncate) must be \
 greater than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-      return out + get_unique_res(to) + " = fpext " + res_type(get_res(res_version-1)) + " "
-            + get_res(res_version-1) + " to " + to;
+      return out + get_unique_res(to) + " = fpext " + res_type(get_res(res_version/*-1*/)) + " "
+            + get_res(res_version/*-1*/) + " to " + to;
     }
     else
       error(form,"The first argument to truncate must be an integer or a \
@@ -303,8 +303,8 @@ floating point type, but an object of type ",latest_type()," was given.");
       error(form,"The bit width of the first argument to (zextend) must be \
 lesser than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-    return out + get_unique_res(to) + " = zext " + res_type(get_res(res_version-1)) + " "
-           + get_res(res_version-1) + " to " + to;
+    return out + get_unique_res(to) + " = zext " + res_type(get_res(res_version/*-1*/)) + " "
+           + get_res(res_version/*-1*/) + " to " + to;
   }
   
   string sextend(Form* form)
@@ -317,8 +317,8 @@ width(latest_type())," and ",width(to),", respectively.");
       error(form,"The bit width of the first argument to (sextend) must be \
 lesser than the bit width of the second argument. In this case, they were ",
 width(latest_type())," and ",width(to),", respectively.");
-    return out + get_unique_res(to) + " = sext " + res_type(get_res(res_version-1)) + " "
-           + get_res(res_version-1) + " to " + to;
+    return out + get_unique_res(to) + " = sext " + res_type(get_res(res_version/*-1*/)) + " "
+           + get_res(res_version/*-1*/) + " to " + to;
   }
   
   /*
@@ -364,8 +364,8 @@ but an object of type '",latest_type(),"' was given.");
   {
     string out = emitCode(nth(form,1));
     string to = printTypeSignature(nth(form,2));
-    out += get_unique_res(to) + " = bitcast " + res_type(get_res(res_version-1)) + " "
-        + get_res(res_version-1) + " to " + to;
+    out += get_unique_res(to) + " = bitcast " + res_type(get_res(res_version/*-1*/)) + " "
+        + get_res(res_version/*-1*/) + " to " + to;
     return out;
   }
   
@@ -991,7 +991,7 @@ but an object of type '",latest_type(),"' was given.");
     if(latest_type() != mword)
       error(form,"The second argument to (create) must be a machine word, but an object of type '",latest_type(),"' was given.");
     out += get_unique_tmp() + " = mul " + mword + " " + get_current_res() + ", " + to_string(typeSize(cutlast(type))/8) + "\n";
-    out += get_unique_tmp() + " = call i8* @malloc(" + mword + " " + get_tmp(tmp_version-1) + ")\n";
+    out += get_unique_tmp() + " = call i8* @malloc(" + mword + " " + get_tmp(tmp_version/*-1*/) + ")\n";
     //Insert a gc root here
     out += get_unique_res(type) + " = bitcast i8* " + get_current_tmp() + " to " + type + "\n";
     //If pointers should be null-initialized
