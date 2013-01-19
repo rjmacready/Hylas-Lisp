@@ -267,3 +267,7 @@ Nested namespaces:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Introspection
+
+## `JIT`
+
+## `compile`

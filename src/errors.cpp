@@ -77,12 +77,12 @@ namespace Hylas
   {
     print_errormode();
     error_print(text...);
-    //master.errmsg += at(head);
+    master.errmsg += at(head);
     if(master.output == HTML)
       master.errmsg += "</div>";
     Unwind();
   }
-  
+
   template<typename... T>
   void nerror(T const& ... text)
   {
@@ -92,10 +92,10 @@ namespace Hylas
       master.errmsg += "</div>";
     Unwind();
   }
-  
+
   template<typename... T>
   void warn(Form* head, T const& ... text)
-  {    
+  {
     error_print(text...);
     master.errmsg += at(head);
     if(master.output == HTML)
