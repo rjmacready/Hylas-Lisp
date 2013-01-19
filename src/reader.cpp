@@ -488,6 +488,11 @@ whose length is %li.",location,print(in).c_str(),length(in));
     reseterror();
     return expandEverything(read(fopen("reader.tmp","r+")));
   }
+
+  Form* readToplevelString(string in)
+  {
+    return readString("(print " + in + ")");
+  }
   
   Form* readFile(string filename)
   {
@@ -517,7 +522,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
       if(master.output == HTML)
       {
         RGB derp = genColor();
-        return exportRGB(derp) + "<strong>()</strong></div>";
+        return exportRGB(derp) + "<strong>()</strong></span>";
       }
       else
         return "()";
@@ -529,7 +534,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
       string level = exportRGB(derp);
       parenlevel++;
       if(master.output == HTML)
-        out += level + "<strong>(</strong></div>";
+        out += level + "<strong>(</strong></span>";
       else
         out += "(";
       out += print(car(in));
@@ -542,7 +547,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
       }
       parenlevel--;
       if(master.output == HTML)
-        out += level + "<strong>)</strong></div>";
+        out += level + "<strong>)</strong></span>";
       else
         out += ")";
       return out;

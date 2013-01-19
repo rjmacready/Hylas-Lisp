@@ -383,7 +383,7 @@ namespace Hylas
     master.Passes.run(*master.Program);
     return code;
   }
-  
+
   string Run()
   {
     llvm::Function* entryfn = master.Engine->FindFunctionNamed("entry");
@@ -393,7 +393,7 @@ namespace Hylas
     GenericValue retval = master.Engine->runFunction(entryfn,args);
     master.Engine->freeMachineCodeForFunction(entryfn);
     entryfn->eraseFromParent();
-    return "" /*string((char*)(retval.PointerVal))*/;
+    return /*""*/string((char*)(retval.PointerVal));
   }
   
   void init_optimizer()
@@ -409,6 +409,7 @@ namespace Hylas
   void init()
   {
     InitializeNativeTarget();
+	master.version = 0.9;
     master.Program = new Module("Hylas Lisp",Context);
     master.Engine = ExecutionEngine::createJIT(master.Program);
     master.Loader = new Linker("Hylas Lisp",master.Program);
@@ -417,8 +418,6 @@ namespace Hylas
     master.allow_RedefineWordMacros = true;
     master.allow_RedefinePrePostfixes = true;
     master.allow_RedefineFunctions = false;
-    master.output = Plain;
-    master.prompt = ((master.output == Plain) ? ">":"<strong>&lt;</strong>");
     master.Colorscheme = defaultColorscheme();
     master.CSS = defaultCSS();
     master.errormode = NormalError;

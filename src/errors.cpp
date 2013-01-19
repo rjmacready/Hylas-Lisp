@@ -8,17 +8,17 @@ namespace Hylas
 {
   using namespace std;
   using namespace llvm;
-  
+
   inline void reseterror() { master.errormode = NormalError; }
-  
+
   void Unwind()
   {
     throw exception();
   }
-  
+
   string getError()
   { string tmp = master.errmsg; master.errmsg.clear(); return tmp; }
- 
+
   string at(Form* in)
   {
     if(master.output == HTML)
@@ -28,7 +28,7 @@ namespace Hylas
       return (string)"\nLine " + to_string<long>(in->line) + ", column "
         + to_string<int>(in->column) + (string)":\n" + in;
   }
-  
+
   inline string print(string in){ return in; }
   inline string print(char* in){ return string(in); }
   inline string print(const char* in){ return string(in); }
@@ -71,13 +71,13 @@ namespace Hylas
         break;
     }
   }
-  
+
   template<typename... T>
   void error(Form* head, T const& ... text)
   {
     print_errormode();
+	//master.errmsg += at(head);
     error_print(text...);
-    master.errmsg += at(head);
     if(master.output == HTML)
       master.errmsg += "</div>";
     Unwind();

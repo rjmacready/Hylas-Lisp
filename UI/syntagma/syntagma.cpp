@@ -1,4 +1,8 @@
-#include <QWebView>
+#include <string>
+
+#include <QApplication>
+#include <QtGui>
+#include <QWebFrame>
 
 #include "../../src/hylas.hpp"
 #include "../../src/core.hpp"
@@ -21,7 +25,17 @@
 #include "../../src/utils.cpp"
 #include "../../src/docs.cpp"
 
+using namespace Hylas;
+
+#include "tabs.cpp"
+
 int main(int argc, char *argv[])
 {
-  return 0;
+  init();
+  master.output = Plain;
+  master.prompt = "<br><strong>&gt;</strong>";
+  QApplication Syntagma(argc,argv);
+  Tabs* tabs = new Tabs;
+  tabs->show();
+  return Syntagma.exec();
 }

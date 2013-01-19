@@ -46,6 +46,7 @@ namespace Hylas
   Form* expandEverything(Form* in);
   Form* read(FILE* in);
   Form* readString(string in);
+  Form* readToplevelString(string in);
   Form* readFile(string filename);
   
   string print(Form* in);

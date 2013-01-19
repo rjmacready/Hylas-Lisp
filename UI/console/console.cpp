@@ -22,8 +22,11 @@
 int main(int argc, char *argv[])
 {
   using namespace Hylas;
-  printf("Hylas Lisp 0.7, by Eudoxia\n");
   init();
+  cout << "Hylas Lisp " << master.version << " by Eudoxia" << endl;
+  master.output = Plain;
+  master.prompt = ">";
+  master.debug = true;
   if(argc == 1)
   {
     //Hylas called without files
@@ -33,7 +36,7 @@ int main(int argc, char *argv[])
       while(true)
       {
         printf("\n>");
-        JIT(Compile(readString("(puts (print " + print(read(stdin)) + "))")));
+        JIT(Compile(readToplevelString(print(read(stdin)))));
         puts(Run().c_str());
       }
     }

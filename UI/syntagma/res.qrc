@@ -1,0 +1,15 @@
+<RCC>
+  <qresource prefix="UI/syntagma">
+    <file>icons/back.png</file>
+    <file>icons/console.png</file>
+    <file>icons/restart.png</file>
+    <file>icons/docs.png</file>
+    <file>icons/fwd.png</file>
+    <file>icons/home.png</file>
+    <file>icons/history.png</file>
+    <file>icons/send.png</file>
+  </qresource>
+  <qresource prefix="newPrefix">
+    <file>../../docs/html/index.html</file>
+  </qresource>
+</RCC>

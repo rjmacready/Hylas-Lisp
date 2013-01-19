@@ -127,6 +127,7 @@ namespace Hylas
   
   struct Compiler
   {
+	float version;
     Module* Program;
     PassManager Passes;
     ExecutionEngine* Engine;

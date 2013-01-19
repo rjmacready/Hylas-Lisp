@@ -27,7 +27,8 @@ HEADERS += ../../src/hylas.hpp \
            ../../src/types.cpp \
            ../../src/tests.cpp \
            ../../src/utils.cpp \
-           ../../src/docs.cpp
+           ../../src/docs.cpp \
+		   tabs.hpp
 SOURCES += syntagma.cpp \
            ../../src/hylas.cpp \
            ../../src/core.cpp \
@@ -38,9 +39,10 @@ SOURCES += syntagma.cpp \
            ../../src/types.cpp \
            ../../src/utils.cpp \
            ../../src/docs.cpp
-QT += webkit
+QT += webkit gui
 
 LIBS += -L/usr/lib/llvm-3.0/lib  -lpthread -lffi -ldl -lm -lLLVMLinker -lLLVMArchive -lLLVMBitReader -lLLVMAsmParser -lLLVMX86Disassembler\
 -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMX86Desc -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMMCParser -lLLVMX86AsmPrinter -lLLVMX86Utils -lLLVMX86Info\
 -lLLVMJIT -lLLVMExecutionEngine -lLLVMCodeGen -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMMC\
 -lLLVMCore -lLLVMSupport -L/usr/lib/llvm-3.0/lib
+RESOURCES += res.qrc
