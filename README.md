@@ -8,7 +8,7 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 ```lisp
 (recursive fib i64 ((n i64))
-  (if (< n 2)
+  (if (icmp n slt 2)
     n
     (add (fib (sub n 1))
          (fib (sub n 2)))))

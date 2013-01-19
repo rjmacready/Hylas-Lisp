@@ -13,3 +13,4 @@
 docs/Doxygen/*
 docs/html/*
 *.kate-swp
+test.ll
