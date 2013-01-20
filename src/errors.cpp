@@ -32,7 +32,7 @@ namespace Hylas
   inline string print(string in){ return in; }
   inline string print(char* in){ return string(in); }
   inline string print(const char* in){ return string(in); }
-  inline string print(const char& in){ return string((const char*)in); }
+  inline string print(const char& in){ return string(&in); }
   
   template<typename Arg1, typename... Args>
   void error_print(const Arg1& arg1, const Args&... args)
@@ -47,25 +47,25 @@ namespace Hylas
     {
       case NormalError:
         if(master.output == HTML)
-          master.errmsg += "<div class='error normalerror'><strong><a href src='Errors.html#Normal_Errors'>Normal Error</a>:</strong> ";
+          master.errmsg += "<div class='error normalerror'><strong class='error-title'><a href src='errors.html#Normal_Errors'>Normal Error</a>:</strong> ";
         else
           master.errmsg += "Normal Error: ";
         break;
       case ReaderError:
         if(master.output == HTML)
-          master.errmsg += "<div class='error readererror'><strong><a href src='Errors.html#Reader_Errors'>Reader Error</a>:</strong> ";
+          master.errmsg += "<div class='error readererror'><strong class='error-title'><a href src='errors.html#Reader_Errors'>Reader Error</a>:</strong> ";
         else
           master.errmsg += "Reader Error: ";
         break;
       case GenericError:
         if(master.output == HTML)
-          master.errmsg += "<div class='error genericerror'><strong><a href src='Errors.html#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
+          master.errmsg += "<div class='error genericerror'><strong class='error-title'><a href src='errors.html#Generic_Errors'>Error during Generic Expansion</a>:</strong> ";
         else
           master.errmsg += "Error during Generic Expansion: ";
         break;
       case MacroError:
         if(master.output == HTML)
-          master.errmsg += "<div class='error macroerror'><strong><a href src='Errors.html#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
+          master.errmsg += "<div class='error macroerror'><strong class='error-title'><a href src='errors.html#Macro_Errors'>Error during Macro Expansion</a>:</strong> ";
         else
           master.errmsg += "Error during Macro Expansion: ";
         break;
@@ -76,8 +76,10 @@ namespace Hylas
   void error(Form* head, T const& ... text)
   {
     print_errormode();
+	master.errmsg += "<p class='error-text'>";
 	//master.errmsg += at(head);
     error_print(text...);
+	master.errmsg += "</p>";
     if(master.output == HTML)
       master.errmsg += "</div>";
     Unwind();
@@ -87,7 +89,9 @@ namespace Hylas
   void nerror(T const& ... text)
   {
     print_errormode();
+	master.errmsg += "<p class='error-text'>";
     error_print(text...);
+	master.errmsg += "</p>";
     if(master.output == HTML)
       master.errmsg += "</div>";
     Unwind();
@@ -96,7 +100,9 @@ namespace Hylas
   template<typename... T>
   void warn(Form* head, T const& ... text)
   {
+	master.errmsg += "<p class='error-text'>";
     error_print(text...);
+	master.errmsg += "</p>";
     master.errmsg += at(head);
     if(master.output == HTML)
       master.errmsg += "</div>";

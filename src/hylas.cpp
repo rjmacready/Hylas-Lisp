@@ -508,9 +508,9 @@ namespace Hylas
   
   string exportRGB(RGB in)
   {
-    return "<div style=\"color:rgb(" + to_string(in.Red)
+    return "<span style='color:rgb(" + to_string(in.Red)
           + "," + to_string(in.Green)
-          + "," + to_string(in.Blue) + ");display:inline;\">";
+          + "," + to_string(in.Blue) + ");display:inline;'>";
   }
   
   string matchKeyword(string in)
@@ -519,37 +519,37 @@ namespace Hylas
     switch(analyze(in))
     {
       case BooleanTrue:
-        in = exportRGB(master.Colorscheme.find("BooleanTrue")->second) + in + "</div>";
+        in = exportRGB(master.Colorscheme.find("BooleanTrue")->second) + in + "</span>";
         break;
       case BooleanFalse:
-        in = exportRGB(master.Colorscheme.find("BooleanFalse")->second) + in + "</div>";
+        in = exportRGB(master.Colorscheme.find("BooleanFalse")->second) + in + "</span>";
         break;
       case Integer:
-        in = exportRGB(master.Colorscheme.find("Integer")->second) + in + "</div>";
+        in = exportRGB(master.Colorscheme.find("Integer")->second) + in + "</span>";
         break;
       case Character:
-        in = exportRGB(master.Colorscheme.find("Character")->second) + in + "</div>";
+        in = exportRGB(master.Colorscheme.find("Character")->second) + in + "</span>";
         break;
       case Real:
-        in = exportRGB(master.Colorscheme.find("Real")->second) + in + "</div>";
+        in = exportRGB(master.Colorscheme.find("Real")->second) + in + "</span>";
         break;
       case String:
-        in = exportRGB(master.Colorscheme.find("String")->second) + in + "</div>";
+        in = exportRGB(master.Colorscheme.find("String")->second) + in + "</span>";
         break;
       case Symbol:
       {
         //Is it a TopLevel or Core function?
         if(Core.find(in) != Core.end())
-          in = exportRGB(master.Colorscheme.find("Core")->second) + in + "</div>";
+          in = exportRGB(master.Colorscheme.find("Core")->second) + in + "</span>";
         //Is it a symbol?
         else if(lookup(in) != NULL)
-          in = exportRGB(master.Colorscheme.find("Symbol")->second) + in + "</div>";
+          in = exportRGB(master.Colorscheme.find("Symbol")->second) + in + "</span>";
         //Is it a type?
         else if(checkTypeExistence(in))
-          in = exportRGB(master.Colorscheme.find("Type")->second) + in + "</div>";
+          in = exportRGB(master.Colorscheme.find("Type")->second) + in + "</span>";
         else if(checkGenericExistence(in,true) ||
                 checkGenericExistence(in,false))
-          in = exportRGB(master.Colorscheme.find("Generic")->second) + in + "</div>";
+          in = exportRGB(master.Colorscheme.find("Generic")->second) + in + "</span>";
         //lol wtf is it just return it
         break;
       }
@@ -561,7 +561,7 @@ namespace Hylas
     }
     return in;
   }
-  
+
   map<string,RGB> defaultColorscheme()
   {
     map<string,RGB> tmp;
@@ -577,7 +577,7 @@ namespace Hylas
     tmp.insert(pair<string,RGB>("Generic",RGB(159,121,238)));
     return tmp;
   }
-  
+
   CSS defaultCSS()
   {
     string tmp;
@@ -589,7 +589,7 @@ namespace Hylas
     tmp += ".macroerror { background: #000000; }";
     return tmp;
   }
-  
+
   CSS getCSS()
   { return "<style type=\"text/css\">" + master.CSS + "</style>"; }
 }

@@ -513,7 +513,7 @@ whose length is %li.",location,print(in).c_str(),length(in));
     reseterror();
     return expandEverything(tmp);
   }
-  
+
   string print(Form* in)
   {
     static unsigned char parenlevel = 0;
@@ -576,4 +576,17 @@ whose length is %li.",location,print(in).c_str(),length(in));
     else
       return Unidentifiable;
   }*/
+  
+  string newlinesToTag(string in)
+  {
+	string out;
+	for(unsigned long i = 0; i < in.length(); i++)
+	{
+	  if(in[i] == '\n')
+		out += "<br>";
+	  else
+		out += in[i];
+	}
+	return out;
+  }
 }

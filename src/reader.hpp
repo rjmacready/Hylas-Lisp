@@ -48,6 +48,8 @@ namespace Hylas
   Form* readString(string in);
   Form* readToplevelString(string in);
   Form* readFile(string filename);
-  
+
   string print(Form* in);
+
+  string newlinesToTag(string in);
 }

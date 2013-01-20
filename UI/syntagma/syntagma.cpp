@@ -32,7 +32,7 @@ using namespace Hylas;
 int main(int argc, char *argv[])
 {
   init();
-  master.output = Plain;
+  master.output = HTML;
   master.prompt = "<br><strong>&gt;</strong>";
   QApplication Syntagma(argc,argv);
   Tabs* tabs = new Tabs;

@@ -32,27 +32,35 @@ void Tabs::history()
 
 void Tabs::send()
 {
-  string code = input->toPlainText().toStdString();
-  //cerr << "Code:\n" << code << endl;
-  string collect;
+  Form* code;
+  if(freopen("stdout.buf","w",stdout) == NULL)
+	nerror("Could not open stdout buffer.");
+  string buf;
   try
   {
-	JIT(Compile(readToplevelString(print(readString(code)))));
+	master.output = Plain;
+	code = readString(input->toPlainText().toStdString());
+	string s = print(code);
+	master.output = HTML;
+	JIT(Compile(readToplevelString(s)));
 	QString output = Run().c_str();
-	puts("*************\n");
-	puts(output.toStdString().c_str());
-	puts("*************\n");
-	//collect += "Output:\n" + output.toStdString();
-	console->setHtml(console->page()->currentFrame()->toHtml() + input->toPlainText() + QString("<br>") + output);
+	fclose(stdout); //It's VITAL to close stdout before reading from the buffer file
+	ifstream base("stdout.buf");
+	if(!base.good())
+	  nerror("Could not read from stdout buffer.");
+	stringstream file;
+	file << base.rdbuf();
+	buf = newlinesToTag(file.str());
+	console->setHtml(console->page()->currentFrame()->toHtml()
+	  + QString(print(code).c_str()) + QString("<br>") + QString(buf.c_str()) + output);
   }
   catch(exception except)
   {
 	QString err = getError().c_str();
-	//collect += "Error:\n" + err.toStdString();
-	console->setHtml(console->page()->currentFrame()->toHtml() + input->toPlainText() + QString("<br>") + err);
+	console->setHtml(console->page()->currentFrame()->toHtml() + QString(print(code).c_str()) + QString("<br>") + err);
   }
-  //cerr << collect << endl;
+  if(remove("stdout.buf") != 0)
+	nerror("Could not remove the stdout buffer.");
   console->setHtml(QString(((console->page()->currentFrame()->toHtml()).toStdString() + master.prompt).c_str()));
   input->clear();
-  cerr << console->page()->currentFrame()->toHtml().toStdString() << endl;
 }

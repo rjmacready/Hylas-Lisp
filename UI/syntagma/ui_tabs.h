@@ -1,14 +1,14 @@
 /********************************************************************************
-** Form generated from reading UI file 'tabsM10779.ui'
+** Form generated from reading UI file 'tabsCj5211.ui'
 **
-** Created: Sat Jan 19 15:39:45 2013
+** Created: Sat Jan 19 22:52:01 2013
 **      by: Qt User Interface Compiler version 4.8.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
 
-#ifndef TABSM10779_H
-#define TABSM10779_H
+#ifndef TABSCJ5211_H
+#define TABSCJ5211_H
 
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
@@ -16,9 +16,9 @@
 #include <QtGui/QButtonGroup>
 #include <QtGui/QGridLayout>
 #include <QtGui/QHeaderView>
+#include <QtGui/QPlainTextEdit>
 #include <QtGui/QSpacerItem>
 #include <QtGui/QTabWidget>
-#include <QtGui/QTextEdit>
 #include <QtGui/QToolButton>
 #include <QtGui/QWidget>
 #include <QtWebKit/QWebView>
@@ -35,7 +35,7 @@ public:
     QToolButton *bSend;
     QSpacerItem *horizontalSpacer;
     QToolButton *bHistory;
-    QTextEdit *input;
+    QPlainTextEdit *input;
     QWidget *tab;
     QGridLayout *gridLayout_2;
     QToolButton *bBack;
@@ -87,7 +87,7 @@ public:
 
         gridLayout->addWidget(bHistory, 2, 1, 1, 1);
 
-        input = new QTextEdit(repl_tab);
+        input = new QPlainTextEdit(repl_tab);
         input->setObjectName(QString::fromUtf8("input"));
 
         gridLayout->addWidget(input, 1, 0, 1, 4);
@@ -166,4 +166,4 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-#endif // TABSM10779_H
+#endif // TABSCJ5211_H

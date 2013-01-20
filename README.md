@@ -44,6 +44,12 @@ Hylas is a statically-typed, [wide-spectrum](http://en.wikipedia.org/wiki/Wide-s
 
 ![Fibonacci benchmarks](http://eudoxia0.github.com/Hylas-Lisp/img/fib.jpg)
 
+# Building
+
+A simple `make` (Or `make console`) will build the default console front-end for Hylas.
+
+If you have the Qt libraries (they are not statically compiled), you can build the Syntagma IDE using `make gui`. Both commands will produce an executable called `hylas.o`.
+
 # Documentation
 
 Documentation on the _language_ is available as a series of [Markdown](http://daringfireball.net/projects/markdown/) files in the `docs` folder, and can be built using Make and [Pandoc](http://johnmacfarlane.net/pandoc/):
