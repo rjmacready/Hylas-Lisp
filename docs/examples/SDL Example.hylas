@@ -1,7 +1,7 @@
 (begin
 (foreign C sleep int int)
 
-(link "/usr/lib/libSDL.so")
+(link "/usr/lib/libSDL-1.2.so.0")
 
 (foreign C SDL_Init void i64)
 (foreign C SDL_Delay void i64)
@@ -48,7 +48,7 @@
   (clip_rect    SDL_Rect)
   (refcount     int))
 
-(foreign C SDL_SetVideoMode (pointer SDL_Surface)
+(foreign C SDL_SetVideoMode SDL_Surface
   int int int int)
 
 (foreign C SDL_WM_SetCaption void (pointer byte) int)

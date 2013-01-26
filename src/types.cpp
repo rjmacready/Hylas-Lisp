@@ -345,11 +345,18 @@ namespace Hylas
       }
     }
     BasicTypes[name] = tmp;
-    persistentPush("%"+ name + " = type " + tmp.definition);
-    //push("%"+ name + " = type " + tmp.definition);
+    //persistentPush("%"+ name + " = type " + tmp.definition);
+    push("%"+ name + " = type " + tmp.definition);
     return constant(get_unique_res("i1"),"i1","true");
   }
-  
+
+  void makePrintFunction(string name, unsigned long long nmembers)
+  {
+	string fn = "(function print (pointer i8) ((arg " + name + "))";
+	fn += "\"le unfinished print function face :--DDD\")";
+	emitCode(readString(fn));
+  }
+
   void validateStructure(Form* in)
   {
     if(length(in) < 3)
@@ -366,7 +373,7 @@ namespace Hylas
       }
     }
   }
-  
+
   string makeStructure(Form* in)
   {
     Type tmp;
@@ -417,8 +424,9 @@ namespace Hylas
     }
     type = cutlast(type) + "}";
     BasicTypes[name].definition = type;
-    persistentPush(out + BasicTypes[name].definition);
-    //push("%"+ name + " = type " + BasicTypes[name].definition);
+    //persistentPush(out + BasicTypes[name].definition);
+    push("%"+ name + " = type " + BasicTypes[name].definition);
+	makePrintFunction(name,length(in)-1);
     return constant(get_unique_res("i1"),"i1","true");
   }
   
@@ -658,7 +666,7 @@ namespace Hylas
     }
     else if(isPointer(latest_type()))
     {
-      message = "<0x%X pointer to " + cutlast(latest_type()) + " with indirection " + to_string(countIndirection(latest_type())) + ">";
+      message = "<0x%X pointer to " + cutfirst(cutlast(latest_type())) + " with indirection " + to_string(countIndirection(latest_type())) + ">";
       ptr = true;
     }
     else if(isInteger(latest_type()))
@@ -671,14 +679,21 @@ namespace Hylas
     }
     else
     {
-      error(form,"I don't even know what to do with this type (",latest_type(),").");
+      warn(form,"Execution was carried out, but I don't even know what to do with this type (",latest_type(),").");
     }
     out += emitCode(readString("\""+message+"\""));
     if(ptr)
     {
       out += gensym() + " = call i32 (i8*,...)* @printf(i8* " + get_current_res() 
           + ", " + res_type(get_res(res_version-1)) + " " + get_res(res_version-1) + ")\n";
-      out += emitCode(readString("\""+message+"\""));
+	  //out += constant(get_unique_res("i1"),"i1","true");
+	  /*unsigned long message_addr;
+	  out += get_unique_res("i8*") + " = call i8* @malloc(" + mword + " 400)\n";
+      out += get_unique_res("i32") + " = call i32 (i8*,i8*,...)* @sprintf(i8* " + get_current_res() + ", i8* " + get_res(message_addr) 
+          + ", " + res_type(get_res(res_version-2)) + " " + get_res(res_version-2) + ")\n";
+	  out += get_unique_res("i8*") + " = call i8* @malloc(" + mword + " " + get_current_res() + ")\n";
+	  out += "call i32 (i8*,i8*,...)* @sprintf(i8* " + get_current_res() + ", i8* " + get_res(message_addr) + ", i32* " + get_res(message_addr-1) + ")\n";
+	  */
       //FIXME: Change this to sprintf etc.
     }
     return out;

@@ -21,21 +21,18 @@
 #include <exception>
 #include <unistd.h>
 
-#define __STDC_LIMIT_MACROS
-#define __STDC_CONSTANT_MACROS
-
-#include <llvm/DerivedTypes.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/LLVMContext.h>
-#include <llvm/Module.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 #include <llvm/PassManager.h>
 #include <llvm/Linker.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Analysis/Passes.h>
 #include <llvm/Assembly/PrintModulePass.h>
-#include <llvm/Target/TargetData.h>
+//#include <llvm/Target/TargetData.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Support/TargetSelect.h>
@@ -155,45 +152,45 @@ namespace Hylas
     vector<string> Namespaces;
     vector<string> NamespaceStack;
   };
-  
+
   Compiler master;
-  
+
   struct IR
   {
     string      assembly;
     string      ret_type;
   };
-  
+
   #define mword    ("i"+to_string(sizeof(size_t)*8))
-  
+
   inline void push(string in);
   inline void persistentPush(string in);
   inline void error_unbound(Form* x);  
   Variable* lookup(string in);
-  
+
   unsigned long tmp_version = -1;
   unsigned long res_version = -1;
   unsigned long label_version = -1;
   unsigned long string_version = -1;
   unsigned long array_version = -1;
-  
+
   // Temporary Registers
-  
+
   inline string gensym();  
   inline string get_unique_tmp();
   inline string get_tmp(long v);  
   inline string get_current_tmp();
-  
+
   // Result Registers
-  
+
   string get_unique_res(string type);  
   string get_unique_res_address(string type, string address, bool symbolic=false);  
   inline string get_res(long v);  
   string res_type(string name);  
   inline string get_current_res();
-  
+
   // Labels
-  
+
   string get_unique_label();
   string get_label(long v); 
   inline string get_current_label();
@@ -202,7 +199,7 @@ namespace Hylas
    * opposed to the merely referentiable.
    */
   inline string functional_label(string in);
-  
+
   // Register Manipulation
   
   inline string allocate(string address, string type);  

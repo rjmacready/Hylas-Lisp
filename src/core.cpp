@@ -945,7 +945,7 @@ but an object of type '",latest_type(),"' was given.");
   
   string postfix(Form* in)
   { return fixes(in,false); }
-  
+
   string import(Form* in)
   {
     string filepath = cutfirst(cutlast(print(cdr(in))));
@@ -953,12 +953,12 @@ but an object of type '",latest_type(),"' was given.");
       filepath = filepath + ".hylas";
     return "";
   }
-  
+
   string link_with_library(Form* form)
   {
     string filename = cutfirst(cutlast(val(nth(form,1))));
     bool Native = true;
-    if(master.Loader->LinkInLibrary(filename, Native))
+    /*if(master.Loader->LinkInLibrary(filename, Native))
     {
       Path FilePath(filename);
       string Magic;
@@ -973,11 +973,10 @@ but an object of type '",latest_type(),"' was given.");
       else
         error(form,"Linker error, not a shared library or bc file");
     }
-    else if (Native)
+    else */if (Native)
     {
       // native lib
-      Path SoFile = master.Loader->FindLib(filename);
-      assert(!SoFile.isEmpty() && "We know the shared lib exists but can't find it back!");
+      Path SoFile = Path(filename.c_str());
       string errMsg;
       if(DynamicLibrary::LoadLibraryPermanently(SoFile.str().c_str(), &errMsg))
         error(form,"Failed to load shared library");

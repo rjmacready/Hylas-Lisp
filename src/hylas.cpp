@@ -348,8 +348,6 @@ namespace Hylas
     out = "define " + latest_type() + " @entry(){\n" + out + "\nret " + latest_type() + " " + get_current_res() + "\n}";
     out = tmp + out;
     string type = latest_type();
-    if(master.debug)
-      cerr << "Code:\n" << out << endl;
     master.CodeStack.clear();
     clear_reader();
     return {out,type};
@@ -378,8 +376,6 @@ namespace Hylas
       entryfn->eraseFromParent();
       nerror("IR Parser Error: ",parser_errors);
     }
-    if(master.debug)
-      master.Program->dump();
     master.Passes.run(*master.Program);
     return code;
   }
@@ -398,12 +394,12 @@ namespace Hylas
   
   void init_optimizer()
   {
-    master.Passes.add(createBasicAliasAnalysisPass());
+    /*master.Passes.add(createBasicAliasAnalysisPass());
     master.Passes.add(createInstructionCombiningPass());
     master.Passes.add(createReassociatePass());
     master.Passes.add(createGVNPass());
     master.Passes.add(createCFGSimplificationPass());
-    master.Passes.add(createAggressiveDCEPass());
+    master.Passes.add(createAggressiveDCEPass());*/
   }
    
   void init()

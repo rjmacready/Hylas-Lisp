@@ -54,10 +54,11 @@ namespace Hylas
   bool isBasicType(string in);
   string specializeType(Generic* in, map<string,Form*> replacements, string signature);
   string printTypeSignature(Form* form);  
-  bool checkTypeExistence(string name);  
-  string makeType(Form* in);  
-  void validateStructure(Form* in);  
-  string makeStructure(Form* in);  
+  bool checkTypeExistence(string name);
+  void makePrintFunction(string name, unsigned long long nmembers);
+  string makeType(Form* in);
+  void validateStructure(Form* in);
+  string makeStructure(Form* in);
   bool checkGenericExistence(string name, bool id);  
   Generic writeGeneric(Form* in, bool type);  
   void addGeneric(string name, Generic in);  

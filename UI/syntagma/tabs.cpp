@@ -4,7 +4,7 @@ Tabs::Tabs(QWidget *parent) : QTabWidget(parent)
 {
   setupUi(this);
   //After initializing, lets push the prompt and the logo to the console
-  console->setHtml(QString(("<img src='./docs/res/img/logo.svg'>" + master.prompt).c_str()));
+  console->setHtml(QString((getCSS() + "<img src='./docs/res/img/logo.svg'>" + master.prompt).c_str()));
   //Connect the buttons on the console tab
   connect(bRestart, SIGNAL(clicked()),
 		  this, SLOT(restart()));
@@ -21,7 +21,7 @@ Tabs::Tabs(QWidget *parent) : QTabWidget(parent)
 
 void Tabs::restart()
 {
-  console->setHtml(QString(master.prompt.c_str()));
+  console->setHtml(QString((getCSS() + master.prompt).c_str()));
   init();
 }
 

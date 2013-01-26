@@ -4,6 +4,9 @@
 #include <QtGui>
 #include <QWebFrame>
 
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
+
 #include "../../src/hylas.hpp"
 #include "../../src/core.hpp"
 #include "../../src/errors.hpp"
@@ -33,6 +36,7 @@ int main(int argc, char *argv[])
 {
   init();
   master.output = HTML;
+  master.debug = true;
   master.prompt = "<br><strong>&gt;</strong>";
   QApplication Syntagma(argc,argv);
   Tabs* tabs = new Tabs;

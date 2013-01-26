@@ -1,6 +1,6 @@
 (begin
   (foreign C printf int (pointer char) ...)
-  (foreign C puts int (pointer char))
+  (foreign C puts word (pointer char))
   (foreign C strlen word (pointer char))
   (foreign C strcat (pointer char) (pointer char) (pointer char))
   (foreign C sprintf int (pointer char) (pointer char) ...)
@@ -25,6 +25,7 @@
 	(def size (extend (add (sprintf buf "%i" in) (truncate 1 i32)) word))
 	(def str (create char size))
 	(strcpy str buf)
+	(free buf)
 	str)
 
   (function print (pointer char) ((in int))
@@ -32,6 +33,7 @@
 	(def size (extend (add (sprintf buf "%i" in) (truncate 1 i32)) word))
 	(def str (create char size))
 	(strcpy str buf)
+	(free buf)
 	str)
 
   (function print (pointer char) ((in long))
@@ -39,6 +41,7 @@
 	(def size (extend (add (sprintf buf "%i" in) (truncate 1 i32)) word))
 	(def str (create char size))
 	(strcpy str buf)
+	(free buf)
 	str)
 
   (function print (pointer char) ((in float))
@@ -46,6 +49,7 @@
 	(def size (extend (add (sprintf buf "%E" in) (truncate 1 i32)) word))
 	(def str (create char size))
 	(strcpy str buf)
+	(free buf)
 	str)
 
   (function print (pointer char) ((in double))
@@ -53,6 +57,7 @@
 	(def size (extend (add (sprintf buf "%E" in) (truncate 1 i32)) word))
 	(def str (create char size))
 	(strcpy str buf)
+	(free buf)
 	str)
 
   (function print (pointer char) ((in x86_fp80))
@@ -60,6 +65,7 @@
 	(def size (extend (add (sprintf buf "%E" in) (truncate 1 i32)) word))
 	(def str (create char size))
 	(strcpy str buf)
+	(free buf)
 	str)
 
   (function print (pointer char) ((in (pointer char)))

@@ -1,0 +1,27 @@
+(begin
+  (link "/usr/lib/libgsl.so.0")
+
+  (structure gsl_block
+	(size i64)
+	(data (pointer double)))
+
+  (structure gsl_vector
+	(size word)
+	(stride word)
+	(data (pointer double))
+	(block (pointer gsl_block))
+	(owner int))
+
+  (structure gsl_matrix
+	(size1 i64)
+	(size2 i64)
+	(tda i64)
+	(data (pointer double))
+	(block (pointer gsl_block))
+	(owner i32))
+
+  (foreign C gsl_sf_bessel_J0 double double)
+  (foreign C gsl_matrix_alloc (pointer gsl_matrix) word word)
+
+  (global myMatrix (gsl_matrix_alloc 10 10))
+)
