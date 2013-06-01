@@ -21,12 +21,12 @@
 #include <exception>
 #include <unistd.h>
 
-#include <llvm/IR/DerivedTypes.h>
+#include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
+#include <llvm/LLVMContext.h>
+#include <llvm/Module.h>
 #include <llvm/PassManager.h>
 #include <llvm/Linker.h>
 #include <llvm/Analysis/Verifier.h>
